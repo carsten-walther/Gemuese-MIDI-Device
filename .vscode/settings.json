@@ -1,0 +1,16 @@
+{
+    // clangd: Include-Pfade der Xtensa-Toolchain per --query-driver auflösen
+    "clangd.arguments": [
+        "--query-driver=/Users/carsten.walther/.platformio/packages/**/bin/xtensa*",
+        "--compile-commands-dir=${workspaceFolder}",
+        "--background-index"
+    ],
+
+    // Formatierung über .clang-format beim Speichern
+    "[cpp]": {
+        "editor.formatOnSave": true
+    },
+    "[c]": {
+        "editor.formatOnSave": true
+    }
+}

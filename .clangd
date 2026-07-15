@@ -1,0 +1,20 @@
+# clangd-Konfiguration für die Xtensa-Toolchain (ESP32-S3).
+# Braucht die compile_commands.json (erzeugen mit: pio run -t compiledb)
+CompileFlags:
+  # Ohne explizites Target parst clangd mit dem macOS-Host-Target
+  # und dem Apple-SDK-Sysroot — daraus entsteht nur Header-Chaos.
+  Add:
+    - --target=xtensa-esp32s3-elf
+    # clang als "GCC 13.2" ausgeben, sonst versteckt newlib die
+    # long-double-Mathefunktionen (Fehler: no member named 'acoshl')
+    - -fgnuc-version=13.2.0
+  # GCC-Flags, die clang nicht kennt. (Die RISC-V-Include-Pfade werden
+  # schon bei der Erzeugung der compile_commands.json entfernt, siehe
+  # scripts/format.py.)
+  Remove:
+    - -mlongcalls
+    - -mdisable-hardware-atomics
+    - -fstrict-volatile-bitfields
+    - -fno-tree-switch-conversion
+    - -fno-shrink-wrap
+    - -freorder-blocks
