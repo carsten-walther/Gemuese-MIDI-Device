@@ -24,7 +24,7 @@ Pads, den Verbindungsstatus und den Batteriestand.
 - **BLE-MIDI**: erscheint als Bluetooth-MIDI-Gerät (macOS, iOS, Windows 10+)
 - **WLAN-Setup ohne Neu-Flashen**: kommt keine Verbindung zustande,
   öffnet das Gerät ein Captive Portal (AP „Gemuese-MIDI-Device",
-  http://192.168.4.1) — dort eingetragene Zugangsdaten überleben
+  http://192.168.4.1, Zahnrad-Icon in der Statusleiste) — dort eingetragene Zugangsdaten überleben
   Neustarts; BLE-MIDI läuft währenddessen weiter
 - **RTP-MIDI / AppleMIDI** über WLAN inkl. Bonjour/mDNS-Discovery:
   erscheint im Audio-MIDI-Setup (macOS) bzw. in [rtpMIDI](https://www.tobias-erichsen.de/software/rtpmidi.html) (Windows)
@@ -149,8 +149,8 @@ pio run -t compiledb # compile_commands.json für clangd erzeugen
 ### WLAN-Setup-Portal
 
 Ist keine SSID einkompiliert oder schlägt die Verbindung 30 Sekunden
-lang fehl, spannt das Gerät einen Access Point auf und zeigt **SETUP**
-in der Statuszeile. Dann: mit dem WLAN „Gemuese-MIDI-Device" verbinden,
+lang fehl, spannt das Gerät einen Access Point auf und zeigt ein magentafarbenes
+**Zahnrad** in der Statusleiste. Dann: mit dem WLAN „Gemuese-MIDI-Device" verbinden,
 http://192.168.4.1 öffnen, eigenes WLAN auswählen und Passwort
 eintragen. Die Daten landen im Flash des ESP32 — beim nächsten Start
 verbindet sich das Gerät direkt. Eine in `Credentials.h` eingetragene

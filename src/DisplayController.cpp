@@ -88,13 +88,19 @@ static LGFX display;
 // Layout
 // ------------------------------------------------
 
+// Obere Leiste: Titel links, Status-Icons und Batterie rechts
 constexpr int32_t TITLE_Y = 10;
 
-constexpr int32_t STATUS_Y      = 40;
-constexpr int32_t STATUS_HEIGHT = 20;
+constexpr int32_t ICON_Y    = 8;   // Oberkante der Status-Icons
+constexpr int32_t ICON_SLOT = 22;  // Breite je Icon-Platz
+constexpr int32_t ICONS_X   = 144; // linker Rand der Icon-Leiste
 
-constexpr int32_t PAD_Y      = 70;
-constexpr int32_t PAD_HEIGHT = 90;
+constexpr int32_t BAT_Y = 8; // Oberkante des Batterie-Symbols
+
+// Die frühere Statuszeile ist in die obere Leiste gewandert —
+// die Pads nutzen den gewonnenen Platz.
+constexpr int32_t PAD_Y      = 34;
+constexpr int32_t PAD_HEIGHT = 122;
 constexpr int32_t PAD_GAP    = 4;
 
 // Batterie-Symbol oben rechts
@@ -148,6 +154,56 @@ static uint16_t velocityColor(uint8_t velocity)
     return velocity < 60 ? TFT_GREEN : (velocity < 100 ? TFT_YELLOW : TFT_RED);
 }
 
+// ------------------------------------------------
+// Status-Icons (je 14x14 px, gezeichnet aus Primitiven)
+// ------------------------------------------------
+
+// Bluetooth-Rune
+static void drawBleIcon(int32_t x, int32_t y, uint16_t color)
+{
+    int32_t cx = x + 7;
+
+    display.drawLine(cx, y, cx, y + 13, color);
+    display.drawLine(cx, y, x + 11, y + 4, color);
+    display.drawLine(x + 11, y + 4, x + 3, y + 10, color);
+    display.drawLine(cx, y + 13, x + 11, y + 9, color);
+    display.drawLine(x + 11, y + 9, x + 3, y + 3, color);
+}
+
+// WLAN-Fächer: Punkt + drei Bögen nach oben
+static void drawWifiIcon(int32_t x, int32_t y, uint16_t color)
+{
+    int32_t cx = x + 7;
+    int32_t cy = y + 13;
+
+    display.fillCircle(cx, cy, 2, color);
+    display.fillArc(cx, cy, 4, 5, 225, 315, color);
+    display.fillArc(cx, cy, 7, 8, 225, 315, color);
+    display.fillArc(cx, cy, 10, 11, 225, 315, color);
+}
+
+// Achtelnote (Netzwerk-MIDI bereit)
+static void drawRtpIcon(int32_t x, int32_t y, uint16_t color)
+{
+    display.fillCircle(x + 5, y + 11, 3, color);
+    display.drawFastVLine(x + 8, y + 2, 10, color);
+    display.drawLine(x + 8, y + 2, x + 12, y + 6, color);
+}
+
+// Zahnrad (Setup-Portal aktiv)
+static void drawSetupIcon(int32_t x, int32_t y, uint16_t color)
+{
+    int32_t cx = x + 7;
+    int32_t cy = y + 7;
+
+    display.fillCircle(cx, cy, 5, color);
+    display.fillRect(cx - 1, y, 3, 3, color);
+    display.fillRect(cx - 1, y + 11, 3, 3, color);
+    display.fillRect(x, cy - 1, 3, 3, color);
+    display.fillRect(x + 11, cy - 1, 3, 3, color);
+    display.fillCircle(cx, cy, 2, TFT_BLACK);
+}
+
 // Zeichnet den Notennamen unten ins Pad. `onFill` = Text liegt auf der
 // hellen Velocity-Füllung (dann schwarz für den Kontrast).
 static void drawPadLabel(uint8_t index, int32_t x, int32_t padWidth, bool onFill)
@@ -172,9 +228,9 @@ static void drawPeakMarker(int32_t x, int32_t padWidth, int32_t pos, uint8_t vel
                      velocityColor(velocity));
 }
 
-static void clearStatusLine()
+static void clearPadArea()
 {
-    display.fillRect(0, STATUS_Y, display.width(), STATUS_HEIGHT, TFT_BLACK);
+    display.fillRect(0, PAD_Y, display.width(), PAD_HEIGHT, TFT_BLACK);
 }
 
 // ------------------------------------------------
@@ -196,7 +252,7 @@ void DisplayController::begin()
 
     display.fillScreen(TFT_BLACK);
 
-    display.setTextSize(2);
+    display.setTextSize(1);
 
     display.setTextDatum(textdatum_t::top_left);
 
@@ -207,22 +263,20 @@ void DisplayController::begin()
 
 void DisplayController::showCalibrating()
 {
-    clearStatusLine();
+    clearPadArea();
 
     display.setTextSize(2);
 
-    display.setTextDatum(textdatum_t::top_left);
+    display.setTextDatum(textdatum_t::middle_center);
 
     display.setTextColor(TFT_WHITE);
 
-    display.drawString("Kalibriere Touch...", 10, STATUS_Y);
+    display.drawString("Kalibriere Touch...", display.width() / 2, PAD_Y + PAD_HEIGHT / 2);
 }
 
 void DisplayController::showPads()
 {
-    clearStatusLine();
-
-    _statusDrawn = false;
+    clearPadArea();
 
     // Neustart/Rekalibrierung: alte Peak-Hold-Marker verwerfen
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
@@ -354,7 +408,7 @@ void DisplayController::showBattery(uint32_t milliVolts)
     _lastBatPercent = percent;
 
     int32_t x = display.width() - BAT_MARGIN - BAT_NUB - BAT_WIDTH;
-    int32_t y = TITLE_Y + 2;
+    int32_t y = BAT_Y;
 
     // Anzeigebereich löschen (Symbol + Text links davon)
     display.fillRect(x - 46, y - 2, 46 + BAT_WIDTH + BAT_NUB + BAT_MARGIN, BAT_HEIGHT + 4,
@@ -415,25 +469,16 @@ void DisplayController::showStatus(bool ble, bool wifi, bool rtp, bool portal)
 
     _statusDrawn = true;
 
-    clearStatusLine();
+    // Icon-Leiste in der oberen Zeile (links neben der Batterie)
+    display.fillRect(ICONS_X - 2, ICON_Y - 2, 4 * ICON_SLOT + 4, 18, TFT_BLACK);
 
-    display.setTextSize(1.5);
+    drawBleIcon(ICONS_X + 0 * ICON_SLOT, ICON_Y, ble ? TFT_CYAN : TFT_DARKGREY);
+    drawWifiIcon(ICONS_X + 1 * ICON_SLOT, ICON_Y, wifi ? TFT_YELLOW : TFT_DARKGREY);
+    drawRtpIcon(ICONS_X + 2 * ICON_SLOT, ICON_Y, rtp ? TFT_GREEN : TFT_DARKGREY);
 
-    display.setTextDatum(textdatum_t::top_left);
-
-    display.setTextColor(ble ? TFT_CYAN : TFT_DARKGREY);
-    display.drawString("BLE", 10, STATUS_Y);
-
-    display.setTextColor(wifi ? TFT_YELLOW : TFT_DARKGREY);
-    display.drawString("WLAN", 50, STATUS_Y);
-
-    display.setTextColor(rtp ? TFT_GREEN : TFT_DARKGREY);
-    display.drawString("RTP", 100, STATUS_Y);
-
-    // Nur sichtbar, solange das WLAN-Setup-Portal offen ist
+    // Zahnrad nur, solange das WLAN-Setup-Portal offen ist
     if (portal)
     {
-        display.setTextColor(TFT_MAGENTA);
-        display.drawString("SETUP", 140, STATUS_Y);
+        drawSetupIcon(ICONS_X + 3 * ICON_SLOT, ICON_Y, TFT_MAGENTA);
     }
 }
