@@ -248,7 +248,8 @@ void DisplayController::showBattery(uint32_t milliVolts)
     int32_t y = TITLE_Y + 2;
 
     // Anzeigebereich löschen (Symbol + Text links davon)
-    display.fillRect(x - 46, y - 2, 46 + BAT_WIDTH + BAT_NUB + BAT_MARGIN, BAT_HEIGHT + 4, TFT_BLACK);
+    display.fillRect(x - 46, y - 2, 46 + BAT_WIDTH + BAT_NUB + BAT_MARGIN, BAT_HEIGHT + 4,
+                     TFT_BLACK);
 
     // Gehäuse mit Kontakt-Nase
     display.drawRect(x, y, BAT_WIDTH, BAT_HEIGHT, TFT_WHITE);
