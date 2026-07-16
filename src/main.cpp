@@ -21,6 +21,36 @@ static uint32_t readBatteryMilliVolts()
     return analogReadMilliVolts(PIN_BAT_VOLT) * 2;
 }
 
+// Kalibriert alle Sensoren neu (Button oder Start). Beendet vorher
+// gehaltene Noten — sonst bliebe in der DAW eine Note hängen, weil der
+// Sensor-Reset das zugehörige Release-Event verschluckt.
+static void recalibrateSensors()
+{
+    for (uint8_t i = 0; i < NUM_SENSORS; i++)
+    {
+        if (sensors[i]->isPressed())
+        {
+            midi.noteOff(sensors[i]->note());
+
+            displayCtrl.drawPad(i, false);
+        }
+    }
+
+    displayCtrl.showCalibrating();
+
+    for (uint8_t i = 0; i < NUM_SENSORS; i++)
+    {
+        sensors[i]->recalibrate();
+
+        Serial.print("Sensor ");
+        Serial.print(i);
+        Serial.print(" Baseline: ");
+        Serial.println(sensors[i]->baseline());
+    }
+
+    displayCtrl.showPads();
+}
+
 // ------------------------------------------------
 // Setup
 // ------------------------------------------------
@@ -28,6 +58,8 @@ static uint32_t readBatteryMilliVolts()
 void setup()
 {
     Serial.begin(115200);
+
+    pinMode(PIN_BUTTON_RECALIBRATE, INPUT_PULLUP);
 
     displayCtrl.begin();
 
@@ -37,18 +69,11 @@ void setup()
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
     {
         sensors[i] = new TouchSensor(touchPins[i], midiNotes[i]);
-
-        sensors[i]->begin();
-
-        Serial.print("Sensor ");
-        Serial.print(i);
-        Serial.print(" Baseline: ");
-        Serial.println(sensors[i]->baseline());
     }
 
-    midi.begin();
+    recalibrateSensors();
 
-    displayCtrl.showPads();
+    midi.begin();
 
     displayCtrl.showBattery(readBatteryMilliVolts());
 }
@@ -59,6 +84,20 @@ void setup()
 
 void loop()
 {
+    // Rekalibrier-Button (aktiv LOW): löst genau einmal pro Tastendruck
+    // aus. Die blockierende Kalibrierung (~1,2 s) wirkt zugleich als
+    // Entprellung — beim Rücksprung hierher ist der Taster längst stabil.
+    static bool buttonWasPressed = false;
+
+    bool buttonPressed = digitalRead(PIN_BUTTON_RECALIBRATE) == LOW;
+
+    if (buttonPressed && !buttonWasPressed)
+    {
+        recalibrateSensors();
+    }
+
+    buttonWasPressed = buttonPressed;
+
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
     {
         sensors[i]->update();

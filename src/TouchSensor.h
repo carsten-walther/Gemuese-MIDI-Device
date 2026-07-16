@@ -8,6 +8,7 @@ public:
     TouchSensor(uint8_t pin, uint8_t note);
 
     void begin();
+    void recalibrate();
     void update();
     bool pressedEvent();
     bool releasedEvent();
@@ -25,6 +26,7 @@ private:
     uint32_t _baseline;
     uint32_t _onThreshold;
     uint32_t _offThreshold;
+    uint32_t _lastBaselineUpdate;
 
     bool _pressed;
     bool _pressedEvent;

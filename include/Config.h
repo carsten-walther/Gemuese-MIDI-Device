@@ -84,3 +84,23 @@ constexpr float TOUCH_ON_RATIO  = 1.15f;
 constexpr float TOUCH_OFF_RATIO = 1.08f;
 
 constexpr uint8_t TOUCH_CALIBRATION_SAMPLES = 16;
+
+// Baseline-Nachführung: solange ein Sensor NICHT gedrückt ist, folgt
+// seine Baseline dem Messwert langsam (IIR-Tiefpass). Das kompensiert
+// Drift durch austrocknendes Gemüse, Temperatur oder Kabellage.
+//
+// Alle TOUCH_BASELINE_INTERVAL_MS wird die Baseline um 1/FILTER der
+// aktuellen Abweichung nachgezogen — mit 250 ms und Faktor 16 ergibt
+// das eine Zeitkonstante von ~4 s: langsame Drift wird ausgeglichen,
+// eine normale Berührung (deutlich kürzer) verschiebt fast nichts.
+constexpr uint32_t TOUCH_BASELINE_INTERVAL_MS = 250; // 0 = Nachführung aus
+constexpr uint16_t TOUCH_BASELINE_FILTER      = 16;
+
+// ------------------------------------------------
+// Buttons
+// ------------------------------------------------
+
+// Unterer Board-Button (aktiv LOW): manuelle Rekalibrierung aller
+// Sensoren im Betrieb — z. B. nach dem Umstecken auf neues Gemüse.
+// Während der Kalibrierung die Elektroden nicht berühren!
+constexpr uint8_t PIN_BUTTON_RECALIBRATE = 14;

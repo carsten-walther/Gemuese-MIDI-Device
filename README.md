@@ -11,6 +11,10 @@ Pads, den Verbindungsstatus und den Batteriestand.
 - **7 Touch-Eingänge** über die internen Touch-Pins des ESP32-S3,
   mit automatischer Baseline-Kalibrierung beim Start und Hysterese
   gegen Prellen
+- **Baseline-Nachführung**: die Ruhewerte folgen langsamer Drift
+  (austrocknendes Gemüse, Temperatur) automatisch; der untere
+  Board-Button (GPIO 14) kalibriert jederzeit manuell neu — z. B.
+  nach dem Umstecken auf neues Gemüse
 - **BLE-MIDI**: erscheint als Bluetooth-MIDI-Gerät (macOS, iOS, Windows 10+)
 - **RTP-MIDI / AppleMIDI** über WLAN inkl. Bonjour/mDNS-Discovery:
   erscheint im Audio-MIDI-Setup (macOS) bzw. in [rtpMIDI](https://www.tobias-erichsen.de/software/rtpmidi.html) (Windows)
@@ -40,8 +44,9 @@ Pads, den Verbindungsstatus und den Batteriestand.
 | 4    | Batteriespannung (intern, 2:1-Teiler) | — |
 
 Mehr interne Touch-Pins gibt es auf diesem Board nicht — GPIO 5–9
-gehören dem Display, GPIO 14 dem zweiten Button. Für mehr Eingänge
-bietet sich ein externer Touch-Controller (z. B. MPR121, I2C) an.
+gehören dem Display, GPIO 14 dem zweiten Button (hier: Rekalibrierung).
+Für mehr Eingänge bietet sich ein externer Touch-Controller
+(z. B. MPR121, I2C) an.
 
 ## Setup
 
@@ -67,6 +72,12 @@ werden die Sensoren kalibriert („Kalibriere Touch…" auf dem Display).
 Das Gemüse muss dabei schon angeschlossen sein, darf aber nicht
 berührt werden.
 
+Im Betrieb führt die Firmware die Ruhewerte automatisch langsam nach
+(einstellbar über `TOUCH_BASELINE_INTERVAL_MS` / `TOUCH_BASELINE_FILTER`
+in `Config.h`). Nach größeren Änderungen — neues Gemüse, umgesteckte
+Klemmen — genügt ein Druck auf den **unteren Board-Button**: alle
+Sensoren werden neu kalibriert, dabei ebenfalls nicht berühren.
+
 ## MIDI verbinden
 
 **BLE (macOS):** Audio-MIDI-Setup → Fenster → MIDI-Studio →
@@ -87,6 +98,8 @@ Alle Einstellungen liegen in [`include/Config.h`](include/Config.h):
 - Gerätename, MIDI-Kanal, Velocity
 - Noten- und Pin-Zuordnung der Sensoren
 - Touch-Empfindlichkeit (`TOUCH_ON_RATIO` / `TOUCH_OFF_RATIO`)
+- Baseline-Nachführung (`TOUCH_BASELINE_INTERVAL_MS` = 0 schaltet sie ab,
+  `TOUCH_BASELINE_FILTER` bestimmt die Trägheit)
 
 **Hinweis zu USB-Host-MIDI:** Der USB-C-Port wird dann exklusiv vom
 USB-Host belegt — der serielle Monitor funktioniert nicht mehr, und es
