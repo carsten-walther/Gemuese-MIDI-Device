@@ -105,8 +105,18 @@ constexpr int32_t PAD_HEIGHT        = 100;
 constexpr int32_t PAD_MARGIN_BOTTOM = 4;
 constexpr int32_t PAD_GAP           = 4;
 
-// Eckenradius der Pads auf dem Display (px)
+// Eckenradius der Tasten (nur unten gerundet, wie beim Klavier)
 constexpr int32_t PAD_CORNER_RADIUS = 4;
+
+// Deko-Obertasten ("schwarze Tasten"): Höhe relativ zur weißen Taste
+// und Breite in px. Rein optisch — gespielt werden die sieben
+// weißen Tasten.
+constexpr int32_t BLACK_KEY_HEIGHT = (PAD_HEIGHT * 55) / 100;
+constexpr int32_t BLACK_KEY_WIDTH  = 14;
+
+// Nach welchen weißen Tasten eine Obertaste sitzt (C-Dur-Oktave:
+// nach C, D, F, G, A — nicht nach E und H)
+constexpr bool BLACK_KEY_AFTER[NUM_SENSORS] = {true, true, false, true, true, true, false};
 
 static int32_t PAD_Y = 0;
 
@@ -229,9 +239,37 @@ static void drawSpeakerIcon(int32_t x, int32_t y, uint16_t color)
     display.fillArc(x + 8, y + 7, 5, 6, 300, 60, color);
 }
 
+// Breite einer weißen Taste (aus der Displaybreite)
+static int32_t keyWidth()
+{
+    return (display.width() - (NUM_SENSORS + 1) * PAD_GAP) / NUM_SENSORS;
+}
+
+// Zeichnet die Deko-Obertasten, die an die weiße Taste `index`
+// angrenzen — nach jedem Neuzeichnen der Taste aufrufen, damit die
+// Obertasten optisch "vorne" bleiben wie beim echten Klavier.
+static void drawBlackKeysAround(uint8_t index)
+{
+    int32_t w = keyWidth();
+
+    for (int8_t k = index - 1; k <= index; k++)
+    {
+        if (k < 0 || k >= NUM_SENSORS - 1 || !BLACK_KEY_AFTER[k])
+        {
+            continue;
+        }
+
+        // Obertaste sitzt mittig über der Fuge zwischen Taste k und k+1
+        int32_t fuge = PAD_GAP + (k + 1) * (w + PAD_GAP) - PAD_GAP / 2;
+
+        display.fillRoundRect(fuge - BLACK_KEY_WIDTH / 2, PAD_Y, BLACK_KEY_WIDTH, BLACK_KEY_HEIGHT,
+                              2, TFT_BLACK);
+    }
+}
+
 // Zeichnet den Notennamen unten ins Pad. `onFill` = Text liegt auf der
 // hellen Velocity-Füllung (dann schwarz für den Kontrast).
-static void drawPadLabel(uint8_t index, int32_t x, int32_t padWidth, bool onFill)
+static void drawPadLabel(uint8_t index, int32_t x, int32_t padWidth)
 {
     char label[8];
 
@@ -241,7 +279,9 @@ static void drawPadLabel(uint8_t index, int32_t x, int32_t padWidth, bool onFill
 
     display.setTextDatum(textdatum_t::middle_center);
 
-    display.setTextColor(onFill ? TFT_BLACK : TFT_WHITE);
+    // Auf der weißen Taste (und auf der farbigen Füllung) ist Schwarz
+    // immer lesbar
+    display.setTextColor(TFT_BLACK);
 
     display.drawString(label, x + padWidth / 2, PAD_Y + PAD_HEIGHT - PAD_LABEL_CENTER);
 }
@@ -322,21 +362,21 @@ void DisplayController::showPads()
 
 void DisplayController::drawPad(uint8_t index, bool pressed, uint8_t velocity)
 {
-    int32_t padWidth = (display.width() - (NUM_SENSORS + 1) * PAD_GAP) / NUM_SENSORS;
+    int32_t padWidth = keyWidth();
 
     int32_t x = PAD_GAP + index * (padWidth + PAD_GAP);
 
     _padPressed[index] = pressed;
 
-    // Grundfläche (Ruhezustand); Füllstand/Marker werden darüber gezeichnet
-    display.fillRoundRect(x, PAD_Y, padWidth, PAD_HEIGHT, PAD_CORNER_RADIUS, TFT_DARKGREY);
-
-    int32_t fill = 0;
+    // Weiße Taste: unten gerundet, oben eckig (Rechteck über die
+    // oberen Ecken legt sie frei — wie beim Klavier)
+    display.fillRoundRect(x, PAD_Y, padWidth, PAD_HEIGHT, PAD_CORNER_RADIUS, TFT_WHITE);
+    display.fillRect(x, PAD_Y, padWidth, PAD_CORNER_RADIUS, TFT_WHITE);
 
     if (pressed)
     {
         // Füllstand von unten, Höhe und Farbe nach Velocity (VU-Stil).
-        fill = PAD_INNER * velocity / 127;
+        int32_t fill = PAD_INNER * velocity / 127;
 
         if (fill > 0)
         {
@@ -355,8 +395,11 @@ void DisplayController::drawPad(uint8_t index, bool pressed, uint8_t velocity)
         drawPeakMarker(x, padWidth, _peakPos[index], _peakVelocity[index]);
     }
 
-    // Notenname unten im Pad; auf der Füllung schwarz für den Kontrast
-    drawPadLabel(index, x, padWidth, pressed && fill >= PAD_LABEL_ZONE);
+    // Notenname unten auf der Taste
+    drawPadLabel(index, x, padWidth);
+
+    // Angrenzende Obertasten wieder "nach vorne" holen
+    drawBlackKeysAround(index);
 }
 
 void DisplayController::updatePeaks()
@@ -375,7 +418,7 @@ void DisplayController::updatePeaks()
 
     _lastPeakStep = now;
 
-    int32_t padWidth = (display.width() - (NUM_SENSORS + 1) * PAD_GAP) / NUM_SENSORS;
+    int32_t padWidth = keyWidth();
 
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
     {
@@ -388,9 +431,9 @@ void DisplayController::updatePeaks()
 
         int32_t x = PAD_GAP + i * (padWidth + PAD_GAP);
 
-        // Alten Marker löschen
+        // Alten Marker löschen (Tastenfarbe: Weiß)
         display.fillRect(x + 2, PAD_Y + 2 + (PAD_INNER - _peakPos[i]), padWidth - 4, PEAK_MARKER_H,
-                         TFT_DARKGREY);
+                         TFT_WHITE);
 
         int32_t oldPos = _peakPos[i];
 
@@ -408,7 +451,13 @@ void DisplayController::updatePeaks()
         // Läuft der Marker durch den Notennamen-Bereich, Text auffrischen
         if (oldPos <= PAD_LABEL_ZONE || _peakPos[i] <= PAD_LABEL_ZONE)
         {
-            drawPadLabel(i, x, padWidth, false);
+            drawPadLabel(i, x, padWidth);
+        }
+
+        // Im Bereich der Obertasten: die Deko wieder nach vorne holen
+        if (oldPos >= PAD_INNER - BLACK_KEY_HEIGHT)
+        {
+            drawBlackKeysAround(i);
         }
     }
 }

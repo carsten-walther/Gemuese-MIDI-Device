@@ -38,7 +38,9 @@ Pads, den Verbindungsstatus und den Batteriestand.
 - **Display-UI**: Pads mit Notennamen — beim Anschlag füllen sie sich
   von unten proportional zur Velocity (grün/gelb/rot, VU-Stil), nach
   dem Loslassen hält ein Peak-Marker die letzte Höhe kurz und fällt
-  dann animiert nach unten —, Notennamen im unteren Pad-Bereich, Statuszeile (BLE / WLAN / RTP), Batterieanzeige mit
+  dann animiert nach unten —, Pads im Klavier-Look (weiße Tasten, unten
+  gerundet, mit Deko-Obertasten über den Fugen), Notennamen im
+  unteren Tasten-Bereich, Statuszeile (BLE / WLAN / RTP), Batterieanzeige mit
   Ladestand bzw. USB-Erkennung
 
 ## Hardware
