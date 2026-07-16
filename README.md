@@ -28,8 +28,8 @@ Pads, den Verbindungsstatus und den Batteriestand.
   ESP32 angeschlossen werden
 - **Display-UI**: Pads mit Notennamen — beim Anschlag füllen sie sich
   von unten proportional zur Velocity (grün/gelb/rot, VU-Stil), nach
-  dem Loslassen bleibt ein Peak-Hold-Marker auf der letzten Höhe
-  stehen —, Statuszeile (BLE / WLAN / RTP), Batterieanzeige mit
+  dem Loslassen hält ein Peak-Marker die letzte Höhe kurz und fällt
+  dann animiert nach unten —, Notennamen im unteren Pad-Bereich, Statuszeile (BLE / WLAN / RTP), Batterieanzeige mit
   Ladestand bzw. USB-Erkennung
 
 ## Hardware
@@ -107,7 +107,8 @@ Alle Einstellungen liegen in [`include/Config.h`](include/Config.h):
 - Anschlagsdynamik (`ENABLE_TOUCH_VELOCITY`, Spanne `VELOCITY_MIN` /
   `VELOCITY_MAX`, Kennlinie `TOUCH_VELOCITY_RATIO_MAX`, Peak-Fenster
   `TOUCH_VELOCITY_WINDOW_MS`, Peak-Hold-Marker
-  `ENABLE_VELOCITY_PEAK_HOLD`) — der serielle Monitor zeigt die
+  `ENABLE_VELOCITY_PEAK_HOLD` mit Haltezeit `VELOCITY_PEAK_HOLD_MS`
+  und Fallgeschwindigkeit `VELOCITY_PEAK_FALL_*`) — der serielle Monitor zeigt die
   gesendete Velocity pro NoteOn zum Einstellen der Kennlinie
 - Noten- und Pin-Zuordnung der Sensoren; Notennamen auf dem Display
   wahlweise deutsch (H4) oder englisch (B4) via `USE_GERMAN_NOTE_NAMES`

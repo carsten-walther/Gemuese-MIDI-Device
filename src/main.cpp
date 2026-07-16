@@ -126,6 +126,9 @@ void loop()
 
     midi.update();
 
+    // Fallende Peak-Marker animieren (intern getaktet)
+    displayCtrl.updatePeaks();
+
     // Statuszeile höchstens alle 500 ms prüfen
     if (millis() - lastStatusUpdate > 500)
     {

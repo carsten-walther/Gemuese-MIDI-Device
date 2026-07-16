@@ -103,6 +103,18 @@ constexpr int32_t BAT_HEIGHT = 12;
 constexpr int32_t BAT_NUB    = 3;
 constexpr int32_t BAT_MARGIN = 6;
 
+// Pad-Innenfläche (2 px Rand innerhalb der abgerundeten Grundfläche)
+constexpr int32_t PAD_INNER = PAD_HEIGHT - 4;
+
+// Notenname unten im Pad: Textmitte, gemessen ab Pad-Unterkante
+constexpr int32_t PAD_LABEL_CENTER = 16;
+
+// Bereich ab Unterkante, in dem der Notenname liegt — läuft der
+// Marker hindurch, muss der Text neu gezeichnet werden
+constexpr int32_t PAD_LABEL_ZONE = 26;
+
+constexpr int32_t PEAK_MARKER_H = 3;
+
 // LiPo-Spannungsgrenzen für die Prozentrechnung
 constexpr uint32_t BAT_EMPTY_MV = 3300;
 constexpr uint32_t BAT_FULL_MV  = 4200;
@@ -134,6 +146,30 @@ static void noteName(uint8_t note, char* buf, size_t len)
 static uint16_t velocityColor(uint8_t velocity)
 {
     return velocity < 60 ? TFT_GREEN : (velocity < 100 ? TFT_YELLOW : TFT_RED);
+}
+
+// Zeichnet den Notennamen unten ins Pad. `onFill` = Text liegt auf der
+// hellen Velocity-Füllung (dann schwarz für den Kontrast).
+static void drawPadLabel(uint8_t index, int32_t x, int32_t padWidth, bool onFill)
+{
+    char label[8];
+
+    noteName(midiNotes[index], label, sizeof(label));
+
+    display.setTextSize(2);
+
+    display.setTextDatum(textdatum_t::middle_center);
+
+    display.setTextColor(onFill ? TFT_BLACK : TFT_WHITE);
+
+    display.drawString(label, x + padWidth / 2, PAD_Y + PAD_HEIGHT - PAD_LABEL_CENTER);
+}
+
+// Zeichnet die Peak-Markerlinie auf Höhe `pos` (px ab Pad-Unterkante)
+static void drawPeakMarker(int32_t x, int32_t padWidth, int32_t pos, uint8_t velocity)
+{
+    display.fillRect(x + 2, PAD_Y + 2 + (PAD_INNER - pos), padWidth - 4, PEAK_MARKER_H,
+                     velocityColor(velocity));
 }
 
 static void clearStatusLine()
@@ -191,7 +227,8 @@ void DisplayController::showPads()
     // Neustart/Rekalibrierung: alte Peak-Hold-Marker verwerfen
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
     {
-        _lastVelocity[i] = 0;
+        _peakPos[i]    = 0;
+        _padPressed[i] = false;
     }
 
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
@@ -206,58 +243,91 @@ void DisplayController::drawPad(uint8_t index, bool pressed, uint8_t velocity)
 
     int32_t x = PAD_GAP + index * (padWidth + PAD_GAP);
 
-    // Grundfläche (Ruhezustand); der Füllstand wird darüber gezeichnet
+    _padPressed[index] = pressed;
+
+    // Grundfläche (Ruhezustand); Füllstand/Marker werden darüber gezeichnet
     display.fillRoundRect(x, PAD_Y, padWidth, PAD_HEIGHT, 6, TFT_DARKGREY);
 
     int32_t fill = 0;
 
     if (pressed)
     {
-        _lastVelocity[index] = velocity;
-
         // Füllstand von unten, Höhe und Farbe nach Velocity (VU-Stil).
-        // Als Rechteck 2 px innerhalb der abgerundeten Grundfläche,
-        // damit die Ecken sauber bleiben.
-        fill = (PAD_HEIGHT - 4) * velocity / 127;
+        fill = PAD_INNER * velocity / 127;
 
         if (fill > 0)
         {
-            display.fillRect(x + 2, PAD_Y + 2 + (PAD_HEIGHT - 4 - fill), padWidth - 4, fill,
+            display.fillRect(x + 2, PAD_Y + 2 + (PAD_INNER - fill), padWidth - 4, fill,
                              velocityColor(velocity));
         }
-    }
-    else if (ENABLE_VELOCITY_PEAK_HOLD && _lastVelocity[index] > 0)
-    {
-        // Peak-Hold: dünne Markerlinie auf der Höhe der letzten
-        // Velocity, in derselben Farbrampe wie der Füllstand.
-        // Mindestens Markerhöhe, damit die Linie bei sehr kleiner
-        // Velocity nicht unter den Pad-Rand rutscht.
-        int32_t peak = (PAD_HEIGHT - 4) * _lastVelocity[index] / 127;
 
-        if (peak < 3)
+        // Peak-Marker auf Füllhöhe "aufziehen" und Haltezeit starten —
+        // sichtbar wird er erst nach dem Loslassen.
+        _peakPos[index]       = fill < PEAK_MARKER_H ? PEAK_MARKER_H : fill;
+        _peakVelocity[index]  = velocity;
+        _peakHoldUntil[index] = millis() + VELOCITY_PEAK_HOLD_MS;
+    }
+    else if (ENABLE_VELOCITY_PEAK_HOLD && _peakPos[index] > 0)
+    {
+        drawPeakMarker(x, padWidth, _peakPos[index], _peakVelocity[index]);
+    }
+
+    // Notenname unten im Pad; auf der Füllung schwarz für den Kontrast
+    drawPadLabel(index, x, padWidth, pressed && fill >= PAD_LABEL_ZONE);
+}
+
+void DisplayController::updatePeaks()
+{
+    if (!ENABLE_VELOCITY_PEAK_HOLD)
+    {
+        return;
+    }
+
+    uint32_t now = millis();
+
+    if (now - _lastPeakStep < VELOCITY_PEAK_FALL_INTERVAL_MS)
+    {
+        return;
+    }
+
+    _lastPeakStep = now;
+
+    int32_t padWidth = (display.width() - (NUM_SENSORS + 1) * PAD_GAP) / NUM_SENSORS;
+
+    for (uint8_t i = 0; i < NUM_SENSORS; i++)
+    {
+        // Nur losgelassene Pads mit Marker, deren Haltezeit abgelaufen
+        // ist (Differenz-Vergleich: robust gegen millis()-Überlauf)
+        if (_padPressed[i] || _peakPos[i] <= 0 || static_cast<int32_t>(now - _peakHoldUntil[i]) < 0)
         {
-            peak = 3;
+            continue;
         }
 
-        display.fillRect(x + 2, PAD_Y + 2 + (PAD_HEIGHT - 4 - peak), padWidth - 4, 3,
-                         velocityColor(_lastVelocity[index]));
+        int32_t x = PAD_GAP + i * (padWidth + PAD_GAP);
+
+        // Alten Marker löschen
+        display.fillRect(x + 2, PAD_Y + 2 + (PAD_INNER - _peakPos[i]), padWidth - 4, PEAK_MARKER_H,
+                         TFT_DARKGREY);
+
+        int32_t oldPos = _peakPos[i];
+
+        _peakPos[i] -= VELOCITY_PEAK_FALL_PX;
+
+        if (_peakPos[i] >= PEAK_MARKER_H)
+        {
+            drawPeakMarker(x, padWidth, _peakPos[i], _peakVelocity[i]);
+        }
+        else
+        {
+            _peakPos[i] = 0; // unten angekommen — Marker verschwindet
+        }
+
+        // Läuft der Marker durch den Notennamen-Bereich, Text auffrischen
+        if (oldPos <= PAD_LABEL_ZONE || _peakPos[i] <= PAD_LABEL_ZONE)
+        {
+            drawPadLabel(i, x, padWidth, false);
+        }
     }
-
-    display.setTextSize(2);
-
-    display.setTextDatum(textdatum_t::middle_center);
-
-    // Reicht der Füllstand bis über die Pad-Mitte, liegt der Notenname
-    // auf der hellen Füllung — dann schwarz für den Kontrast.
-    bool labelOnFill = pressed && fill >= (PAD_HEIGHT - 4) / 2;
-
-    display.setTextColor(labelOnFill ? TFT_BLACK : TFT_WHITE);
-
-    char label[8];
-
-    noteName(midiNotes[index], label, sizeof(label));
-
-    display.drawString(label, x + padWidth / 2, PAD_Y + PAD_HEIGHT / 2);
 }
 
 void DisplayController::showBattery(uint32_t milliVolts)

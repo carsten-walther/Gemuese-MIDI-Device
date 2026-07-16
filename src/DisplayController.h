@@ -22,6 +22,11 @@ public:
     // losgelassen: Ruhezustand.
     void drawPad(uint8_t index, bool pressed, uint8_t velocity = 0);
 
+    // Lässt gehaltene Peak-Marker nach Ablauf der Haltezeit animiert
+    // nach unten fallen — regelmäßig aus loop() aufrufen (intern auf
+    // VELOCITY_PEAK_FALL_INTERVAL_MS getaktet, sonst ein No-Op).
+    void updatePeaks();
+
     // Aktualisiert die Statuszeile; zeichnet nur bei Änderung neu
     void showStatus(bool ble, bool wifi, bool rtp);
 
@@ -40,6 +45,13 @@ private:
     int _lastBatPercent = -1;
     bool _lastUsbPower  = false;
 
-    // Peak-Hold: letzte Velocity je Pad (0 = noch kein Anschlag)
-    uint8_t _lastVelocity[NUM_SENSORS] = {0};
+    // Peak-Hold je Pad: Markerhöhe in px ab Pad-Unterkante (0 = kein
+    // Marker), Velocity für die Markerfarbe, Ende der Haltezeit, und
+    // ob das Pad gerade gedrückt ist (dann kein Marker/Fallen).
+    int32_t _peakPos[NUM_SENSORS]        = {0};
+    uint8_t _peakVelocity[NUM_SENSORS]   = {0};
+    uint32_t _peakHoldUntil[NUM_SENSORS] = {0};
+    bool _padPressed[NUM_SENSORS]        = {false};
+
+    uint32_t _lastPeakStep = 0;
 };
