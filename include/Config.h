@@ -205,7 +205,7 @@ constexpr uint32_t DISPLAY_TOAST_MS = 1500;
 
 // Mindestdauer des Splash-Screens beim Start; die Touch-Kalibrierung
 // und die Funk-Initialisierung laufen währenddessen im Hintergrund
-constexpr uint32_t SPLASH_MS = 4000;
+constexpr uint32_t SPLASH_MS = 2000;
 
 // ------------------------------------------------
 // Settings-Menü
