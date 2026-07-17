@@ -30,7 +30,7 @@ float releasePerSample = 0.0f;
 float masterVolume = SPEAKER_MASTER_VOLUME;
 
 // Aktive Wellenform (Waveform-Enum); 8-Bit-Zugriff ist atomar
-uint8_t activeWaveform = WAVE_TRIANGLE;
+uint8_t activeWaveform = WAVE_CHIP;
 
 // Sinus-Tabelle (1024 Einträge, in begin() gefüllt) — direkte
 // sinf()-Aufrufe pro Sample wären im Audio-Task zu teuer
