@@ -59,7 +59,7 @@ Pads, den Verbindungsstatus und den Batteriestand.
 
 | | | |
 |---|---|---|
-| ![T-Display S3](docs/LilyGo-T-Display-S3-0001.jpeg) | ![MAX98357A](docs/MAX98357A-I2S-Class-D-3W-Amplifier.jpeg) | ![KY-040](docs/KY-040-Rotary-Encoder.jpg) |
+| ![T-Display S3](docs/LilyGo-T-Display-S3-0003.jpeg) | ![MAX98357A](docs/MAX98357A-I2S-Class-D-3W-Amplifier.jpeg) | ![KY-040](docs/KY-040-Rotary-Encoder.jpg) |
 | LilyGo T-Display S3 | MAX98357A I2S-Verstärker | KY-040 Rotary-Encoder |
 
 ### Pinbelegung
