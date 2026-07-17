@@ -188,7 +188,21 @@ constexpr uint8_t PIN_BUTTON_RECALIBRATE = 14;
 // ------------------------------------------------
 
 // Display Rotation 0 ... 3 (sinnvoll sind 1 und 3)
+// Je nach dem, auf welcher Seite der Rotary-Encode platziert ist.
+// Die USB-Schnittstelle soll frei beleiben, also rechts von Display.
 constexpr uint8_t DISPLAY_ROTATION = 3;
 
 // Display Helligkeit 0 ... 255
-constexpr uint8_t DISPLAY_BRIGHNESS = 204;
+constexpr uint8_t DISPLAY_BRIGHNESS = 255;
+
+// ------------------------------------------------
+// Rotary-Encoder (reserviert, noch nicht implementiert)
+// ------------------------------------------------
+
+// EC11/KY-040 an der Stiftleiste: A/B als Quadratursignal (Auswertung
+// später per PCNT-Hardware), SW als Taster gegen GND (Pull-up intern).
+// Hinweis: 43/44 sind U0TXD/U0RXD — frei nutzbar, weil der serielle
+// Monitor auf dem S3 über natives USB-CDC läuft, nicht über UART0.
+constexpr uint8_t PIN_ENCODER_A  = 21;
+constexpr uint8_t PIN_ENCODER_B  = 44;
+constexpr uint8_t PIN_ENCODER_SW = 43;
