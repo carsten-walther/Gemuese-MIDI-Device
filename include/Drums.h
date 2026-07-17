@@ -46,16 +46,19 @@ struct DrumSpec
     float ampDecay;   // Amplituden-Abfall pro Sample (One-Shot)
     float toneMix;    // Anteil Sinus
     float noiseMix;   // Anteil Rauschen
+    float noiseLpf;   // Tiefpass fürs Rauschen (1.0 = ungefiltert/hell,
+                      // kleiner = dunkler; ein Pol, Koeffizient pro Sample)
+    float gain;       // Lautstärke-Ausgleich der Drum gegenüber Melodie
 };
 
 constexpr DrumSpec drumSpecs[NUM_SENSORS] = {
-    {150.0f, 0.99917f, 0.99875f, 1.0f, 0.05f}, // Kick: 150->50 Hz, ~250 ms
-    {180.0f, 0.99950f, 0.99739f, 0.4f, 0.80f}, // Snare: Ton-Burst + Rauschen, ~120 ms
-    {0.0f, 1.0f, 0.99479f, 0.0f, 1.00f},       // HiHat zu: kurzes Rauschen, ~60 ms
-    {0.0f, 1.0f, 0.99922f, 0.0f, 0.80f},       // HiHat offen: ~400 ms
-    {110.0f, 0.99974f, 0.99844f, 1.0f, 0.10f}, // Tom tief: ~200 ms
-    {170.0f, 0.99974f, 0.99844f, 1.0f, 0.10f}, // Tom hoch: ~200 ms
-    {0.0f, 1.0f, 0.99791f, 0.0f, 0.90f},       // Clap (vereinfacht): ~150 ms
+    {170.0f, 0.99889f, 0.99902f, 1.0f, 0.00f, 1.0f, 1.7f},  // Kick: 170->50 Hz, ~320 ms
+    {190.0f, 0.99960f, 0.99776f, 0.45f, 0.9f, 0.30f, 1.4f}, // Snare: Ton + dunkles Rauschen
+    {0.0f, 1.0f, 0.99553f, 0.0f, 1.0f, 0.85f, 1.2f},        // HiHat zu: hell, ~70 ms
+    {0.0f, 1.0f, 0.99911f, 0.0f, 0.8f, 0.70f, 1.2f},        // HiHat offen: ~350 ms
+    {105.0f, 0.99979f, 0.99875f, 1.0f, 0.06f, 0.25f, 1.5f}, // Tom tief: ~250 ms
+    {160.0f, 0.99979f, 0.99875f, 1.0f, 0.06f, 0.25f, 1.5f}, // Tom hoch: ~250 ms
+    {0.0f, 1.0f, 0.99804f, 0.0f, 0.95f, 0.40f, 1.3f},       // Clap: mittleres Rauschen
 };
 
 constexpr const char* instrumentNames[INST_COUNT] = {"Chip", "Drums"};

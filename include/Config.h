@@ -73,7 +73,7 @@ constexpr float TOUCH_VELOCITY_RATIO_MAX = 1.60f;
 // (alle FALL_INTERVAL_MS um FALL_PX Pixel), bis sie verschwindet.
 constexpr bool ENABLE_VELOCITY_PEAK_HOLD = true;
 
-constexpr uint32_t VELOCITY_PEAK_HOLD_MS          = 1000;
+constexpr uint32_t VELOCITY_PEAK_HOLD_MS          = 500;
 constexpr uint32_t VELOCITY_PEAK_FALL_INTERVAL_MS = 30;
 constexpr int32_t VELOCITY_PEAK_FALL_PX           = 2;
 

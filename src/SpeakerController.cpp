@@ -29,6 +29,9 @@ struct Voice
     float ampDecay   = 1.0f; // Amplituden-Abfall pro Sample
     float toneMix    = 1.0f;
     float noiseMix   = 0.0f;
+    float noiseLpf   = 1.0f; // Tiefpass-Koeffizient fürs Rauschen
+    float gain       = 1.0f; // Lautstärke-Ausgleich der Drum
+    float noiseState = 0.0f; // Filterzustand (ein Pol)
 };
 
 Voice voices[NUM_SENSORS];
@@ -234,10 +237,14 @@ void audioTask(void*)
 
                     if (v.noiseMix > 0.0f)
                     {
-                        s += noiseSample() * v.noiseMix;
+                        // Ein-Pol-Tiefpass: nimmt dem LFSR-Rauschen die
+                        // blecherne Härte (Snare/Toms dunkel, HiHats hell)
+                        v.noiseState += (noiseSample() - v.noiseState) * v.noiseLpf;
+
+                        s += v.noiseState * v.noiseMix;
                     }
 
-                    mix += s * v.amp;
+                    mix += s * v.amp * v.gain;
 
                     continue;
                 }
@@ -285,7 +292,9 @@ void audioTask(void*)
             // Chiptune: Ausgang auf 256 Stufen rastern (8 Bit) —
             // Hüllkurven und Ausklingen bekommen so das typische
             // "Zipper"-Treppchen der 80er-Soundchips
-            if (activeWaveform == WAVE_CHIP)
+            // Nur im Chip-Instrument: Drums sollen nicht durch den
+            // Bitcrusher (der macht Kick und Rauschen blechern)
+            if (activeInstrument == INST_CHIP && activeWaveform == WAVE_CHIP)
             {
                 s &= ~0xFF;
             }
@@ -364,17 +373,20 @@ void SpeakerController::noteOn(uint8_t note, uint8_t velocity)
 
             const DrumSpec& spec = drumSpecs[d];
 
-            v.note    = note;
-            v.gate    = false; // One-Shot: kein Gate, Arp bleibt inaktiv
-            v.oneShot = true;
-            v.phase   = 0;
-            v.step    = spec.freq > 0.0f
-                            ? static_cast<uint32_t>(spec.freq / SPEAKER_SAMPLE_RATE * 4294967296.0f)
-                            : 0;
+            v.note       = note;
+            v.gate       = false; // One-Shot: kein Gate, Arp bleibt inaktiv
+            v.oneShot    = true;
+            v.phase      = 0;
+            v.step       = spec.freq > 0.0f
+                               ? static_cast<uint32_t>(spec.freq / SPEAKER_SAMPLE_RATE * 4294967296.0f)
+                               : 0;
             v.pitchDecay = spec.pitchDecay;
             v.ampDecay   = spec.ampDecay;
             v.toneMix    = spec.toneMix;
             v.noiseMix   = spec.noiseMix;
+            v.noiseLpf   = spec.noiseLpf;
+            v.gain       = spec.gain;
+            v.noiseState = 0.0f;
 
             // Schlagstärke direkt setzen — der harte Einsatz gehört
             // zum Drum-Transienten (Sinus startet bei Phase 0)
