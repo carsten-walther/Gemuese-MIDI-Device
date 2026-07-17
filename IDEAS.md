@@ -2,9 +2,11 @@ Was jetzt noch geht, sortiert nach Themen und grob nach Aufwand/Nutzen:
 
 ## Klang & Musikalität (der größte Spielraum)
 
-**Wellenform-Umschalter** — Umgesetzt - die erwähnte Steilvorlage: Dreieck/Rechteck/Sägezahn/Sinus per Boot-Button durchschalten, aktuelle Wellenform als kleines Symbol im Display. Rechteck und Sägezahn sind im Phasen-Akkumulator je drei Zeilen; Sinus braucht eine kleine Lookup-Tabelle. Wenig Aufwand, viel Charakterunterschied.
+**Wellenform-Umschalter** — ✅ Umgesetzt (über das Settings-Menü statt Boot-Button): Dreieck, Rechteck, Sägezahn, Sinus (1024er-LUT) und **8-Bit-Chiptune** (25-%-Puls mit 8-Bit-Rasterung in der Mix-Stufe, seit v1.0 der Default).
 
-**Skalen und Oktav-Shift** — Umgesetzt - sieben Pads sind fix auf C-Dur gemappt. Ein Skalenwahl-Modus (Dur, Moll, Pentatonik, Blues) plus Oktave hoch/runter macht das Instrument musikalisch vielseitiger, ohne Hardware zu ändern. Die Notentabelle wird dann zur Laufzeit berechnet statt aus der Config gelesen — und die Pad-Beschriftung zieht dank `noteName()` automatisch mit.
+**Arpeggio** — ✅ Umgesetzt: gehaltene Akkorde werden im C64-Stil zyklisch als schnelle Notenfolge zerlegt (Off/Slow/Fast/Turbo, sample-genau im Audio-Task, mit De-Klick-Blende). Zusammen mit der 8-Bit-Welle der komplette 80er-Sound.
+
+**Skalen und Oktav-Shift** — ✅ Umgesetzt (Dur, Moll, Pentatonik, Blues als Menüpunkt; Intervalltabellen in `include/Scales.h`) - sieben Pads sind fix auf C-Dur gemappt. Ein Skalenwahl-Modus (Dur, Moll, Pentatonik, Blues) plus Oktave hoch/runter macht das Instrument musikalisch vielseitiger, ohne Hardware zu ändern. Die Notentabelle wird dann zur Laufzeit berechnet statt aus der Config gelesen — und die Pad-Beschriftung zieht dank `noteName()` automatisch mit.
 
 **Vibrato/Aftertouch** — die Touch-Werte liefern kontinuierlich Daten, auch *während* eine Note gehalten wird. Druckänderungen könnten Channel Pressure (MIDI) bzw. Tonhöhen- oder Lautstärkemodulation (Speaker) steuern. Das wäre das ausdrucksstärkste Feature überhaupt: die Gurke fester drücken → der Ton schwillt an.
 
@@ -12,9 +14,11 @@ Was jetzt noch geht, sortiert nach Themen und grob nach Aufwand/Nutzen:
 
 ## Bedienung & Anzeige
 
-**Einstellungen ohne Neu-Flashen** — Teilweise Umgesetzt - Wellenform, Skala, Lautstärke, Velocity-Kennlinie liegen alle in der `Config.h`. Ein kleines Settings-Menü (Boot-Button lang drücken → durchblättern, kurz → ändern) mit Ablage in den NVS-Flash (Preferences-Library) wäre der nächste Reifegrad: Das Gerät wird zum Instrument, das man konfiguriert statt kompiliert. Das ist das größte Einzelprojekt auf dieser Liste.
+**Einstellungen ohne Neu-Flashen** — ✅ Umgesetzt für Lautstärke, Wellenform, Arpeggio, Skala und Oktave: Settings-Menü am Rotary-Encoder (Klick = Parameter, Drehen = Wert), Ablage im NVS-Flash (Preferences), verzögertes Speichern. Noch in der `Config.h`: Touch-Schwellen und Velocity-Kennlinie — Kandidaten für weitere Menüpunkte, sobald der Bedarf da ist.
 
 **Batterie-Warnung** — die Anzeige ist rein passiv. Unter ~10 % könnte das Batterie-Symbol blinken oder der Speaker einen dezenten Warnton spielen, bevor der LiPo in die Tiefentladung läuft.
+
+**Splash-Screen** — ✅ Umgesetzt: Name + Firmware-Version beim Start (4 s), Kalibrierung und Funk-Initialisierung laufen währenddessen im Hintergrund.
 
 ## Robustheit & Strom
 

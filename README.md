@@ -2,11 +2,14 @@
 
 ![Build und Check](https://github.com/carsten-walther/BananaPhon/actions/workflows/ci.yml/badge.svg)
 
-Ein Touch-MIDI-Interface auf Basis des **LilyGo T-Display S3** (ESP32-S3):
-Bis zu sieben kapazitive Touch-Sensoren — zum Beispiel Gemüse — lösen
-MIDI-Noten aus, die drahtlos per **BLE-MIDI** und **RTP-MIDI (AppleMIDI)**
-an einen Computer oder ein iPad gesendet werden. Das Display zeigt die
-Pads, den Verbindungsstatus und den Batteriestand.
+Ein Touch-MIDI-Instrument auf Basis des **LilyGo T-Display S3**
+(ESP32-S3): Bis zu sieben kapazitive Touch-Sensoren — zum Beispiel
+Gemüse — lösen MIDI-Noten aus, die drahtlos per **BLE-MIDI** und
+**RTP-MIDI (AppleMIDI)** an einen Computer oder ein iPad gesendet
+werden. Ohne verbundenes MIDI-Ziel spielt ein eingebauter
+**Chiptune-Synthesizer** über einen Lautsprecher — das BananaPhon ist
+damit auch ganz ohne Computer ein Instrument. Das Display zeigt die
+Klaviatur, den Verbindungsstatus und den Batteriestand.
 
 ## Features
 
@@ -23,9 +26,10 @@ Pads, den Verbindungsstatus und den Batteriestand.
   Anschlags erfasst
 - **BLE-MIDI**: erscheint als Bluetooth-MIDI-Gerät (macOS, iOS, Windows 10+)
 - **Standalone-Betrieb mit Lautsprecher**: ohne verbundenes
-  MIDI-Ziel spielt ein I2S-Verstärker (MAX98357A) die Noten direkt — polyphon mit einer Dreieck-Stimme pro Pad,
-  Velocity steuert die Lautstärke; Lautsprecher-Icon in der
-  Statusleiste zeigt den Modus
+  MIDI-Ziel spielt ein I2S-Verstärker (MAX98357A) die Noten direkt —
+  polyphon mit einer Stimme pro Pad, Wellenform wählbar (Default:
+  8-Bit-Chiptune), Velocity steuert die Lautstärke; Lautsprecher-Icon
+  in der Statusleiste zeigt den Modus
 - **Settings-Menü am Rotary-Encoder** (EC11/KY-040, per
   PCNT-Hardware in voller Quadratur ausgewertet): Klick öffnet das
   Menü und wechselt zwischen **Lautstärke**, **Wellenform**
@@ -44,6 +48,9 @@ Pads, den Verbindungsstatus und den Batteriestand.
   erscheint im Audio-MIDI-Setup (macOS) bzw. in [rtpMIDI](https://www.tobias-erichsen.de/software/rtpmidi.html) (Windows)
 - **USB-Host-MIDI** (optional): ein externes MIDI-Gerät kann an den
   ESP32 angeschlossen werden
+- **Splash-Screen** beim Start mit Gerätename und Firmware-Version;
+  Touch-Kalibrierung und Funk-Initialisierung laufen währenddessen im
+  Hintergrund
 - **Display-UI**: Pads mit Notennamen — beim Anschlag füllen sie sich
   von unten proportional zur Velocity (grün/gelb/rot, VU-Stil), nach
   dem Loslassen hält ein Peak-Marker die letzte Höhe kurz und fällt
@@ -165,6 +172,8 @@ Alle Einstellungen liegen in [`include/Config.h`](include/Config.h):
   `SPEAKER_RELEASE_MS`)
 - Rotary-Encoder (`ENABLE_ENCODER`, Pins, `ENCODER_STEPS_PER_DETENT`,
   `ENCODER_VOLUME_STEP`)
+- Arpeggio-Stufen (`ARP_STEP_MS`)
+- Splash-Screen (`SPLASH_MS`) und Firmware-Version (`FIRMWARE_VERSION`)
 - Settings-Menü (`MENU_TIMEOUT_MS`, Oktavbereich `OCTAVE_RANGE`);
   die Defaults für Lautstärke/Wellenform gelten bis zur ersten
   Änderung im Menü, danach zählen die im NVS gespeicherten Werte
