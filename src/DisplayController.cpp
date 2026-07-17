@@ -340,6 +340,71 @@ void DisplayController::begin()
     display.unloadFont();
 }
 
+void DisplayController::showSplash()
+{
+    display.fillScreen(TFT_BLACK);
+
+    display.setTextDatum(textdatum_t::middle_center);
+
+    // Gerätename groß und bananengelb
+    display.setFont(&fonts::DejaVu40);
+
+    display.setTextSize(1);
+
+    display.setTextColor(TFT_YELLOW);
+
+    display.drawString(MIDI_DEVICE_NAME, display.width() / 2, display.height() / 2 - 20);
+
+    display.unloadFont();
+    
+    // Versionsnummer darunter
+    display.setFont(&fonts::DejaVu12);
+
+    display.setTextSize(1);
+
+    display.setTextColor(TFT_WHITE);
+
+    char version[24];
+
+    snprintf(version, sizeof(version), "v%s", FIRMWARE_VERSION);
+
+    display.drawString(version, display.width() / 2, display.height() / 2 + 22);
+
+    // Hinweis: die Kalibrierung läuft während des Splash — Elektroden
+    // in dieser Zeit nicht berühren!
+    display.setTextColor(TFT_DARKGREY);
+
+    display.drawString("Calibrating - do not touch", display.width() / 2, display.height() - 16);
+
+    display.unloadFont();
+}
+
+void DisplayController::showHome()
+{
+    display.fillScreen(TFT_BLACK);
+
+    // Obere Leiste neu aufbauen: Titel jetzt, Status-Icons beim
+    // nächsten showStatus() (Neuzeichnen erzwingen), Batterie beim
+    // nächsten showBattery()
+    display.setFont(&fonts::DejaVu12);
+
+    display.setTextSize(1);
+
+    display.setTextDatum(textdatum_t::top_left);
+
+    display.setTextColor(TFT_WHITE);
+
+    display.drawString(MIDI_DEVICE_NAME, 10, TITLE_Y);
+
+    display.unloadFont();
+
+    _statusDrawn = false;
+
+    _lastBatPercent = -1;
+
+    showPads();
+}
+
 void DisplayController::showCalibrating()
 {
     clearPadArea();

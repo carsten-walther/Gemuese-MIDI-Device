@@ -18,8 +18,12 @@ constexpr bool ENABLE_WIFI_MIDI = true;
 // funktioniert dann nicht mehr.
 constexpr bool ENABLE_USB_MIDI = false;
 
-// Gerätename (BLE-Advertising, RTP-MIDI/mDNS und Setup-Portal-AP)
+// Gerätename (BLE-Advertising, RTP-MIDI/mDNS, Setup-Portal-AP und
+// Splash-Screen)
 constexpr char MIDI_DEVICE_NAME[] = "BananaPhon";
+
+// Firmware-Version (Splash-Screen); bei Releases mitziehen
+constexpr char FIRMWARE_VERSION[] = "1.0.0";
 
 // WLAN-Setup-Portal: kommt WIFI_PORTAL_AFTER_MS nach dem Start keine
 // Verbindung zustande (oder ist WIFI_SSID in Credentials.h leer),
@@ -198,6 +202,10 @@ constexpr uint8_t DISPLAY_BRIGHNESS = 255;
 
 // Anzeigedauer für kurzzeitige Einblendungen (z. B. Lautstärke)
 constexpr uint32_t DISPLAY_TOAST_MS = 1500;
+
+// Mindestdauer des Splash-Screens beim Start; die Touch-Kalibrierung
+// und die Funk-Initialisierung laufen währenddessen im Hintergrund
+constexpr uint32_t SPLASH_MS = 4000;
 
 // ------------------------------------------------
 // Settings-Menü

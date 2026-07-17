@@ -11,6 +11,13 @@ public:
     // und zeichnet den Titel.
     void begin();
 
+    // Splash-Screen (Name + Version + Kalibrier-Hinweis); danach
+    // showHome() aufrufen, um die normale Oberfläche aufzubauen
+    void showSplash();
+
+    // Baut nach dem Splash die normale Oberfläche neu auf
+    void showHome();
+
     // Hinweis während der Touch-Kalibrierung
     void showCalibrating();
 

@@ -118,10 +118,10 @@ pio run -t upload
 pio device monitor
 ```
 
-**Wichtig beim Start:** In den ersten ~2 Sekunden nach dem Einschalten
-werden die Sensoren kalibriert („Kalibriere Touch…" auf dem Display).
-Das Gemüse muss dabei schon angeschlossen sein, darf aber nicht
-berührt werden.
+**Wichtig beim Start:** Während des Splash-Screens (~4 Sekunden, mit
+Name und Firmware-Version) werden die Sensoren im Hintergrund
+kalibriert. Das Gemüse muss dabei schon angeschlossen sein, darf aber
+nicht berührt werden — der Splash weist darauf hin.
 
 Im Betrieb führt die Firmware die Ruhewerte automatisch langsam nach
 (einstellbar über `TOUCH_BASELINE_INTERVAL_MS` / `TOUCH_BASELINE_FILTER`

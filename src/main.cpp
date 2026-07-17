@@ -71,7 +71,7 @@ static uint32_t readBatteryMilliVolts()
 // Kalibriert alle Sensoren neu (Button oder Start). Beendet vorher
 // gehaltene Noten — sonst bliebe in der DAW eine Note hängen, weil der
 // Sensor-Reset das zugehörige Release-Event verschluckt.
-static void recalibrateSensors()
+static void recalibrateSensors(bool showUi = true)
 {
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
     {
@@ -90,7 +90,10 @@ static void recalibrateSensors()
         }
     }
 
-    displayCtrl.showCalibrating();
+    if (showUi)
+    {
+        displayCtrl.showCalibrating();
+    }
 
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
     {
@@ -102,7 +105,10 @@ static void recalibrateSensors()
         Serial.println(sensors[i].baseline());
     }
 
-    displayCtrl.showPads();
+    if (showUi)
+    {
+        displayCtrl.showPads();
+    }
 }
 
 // ------------------------------------------------
@@ -123,7 +129,11 @@ void setup()
 
     displayCtrl.setScale(Settings::scale());
 
-    displayCtrl.showCalibrating();
+    // Splash-Screen: Name + Version; währenddessen laufen Touch-
+    // Kalibrierung und Funk-Initialisierung im Hintergrund
+    uint32_t splashStart = millis();
+
+    displayCtrl.showSplash();
 
     // Sensoren konfigurieren und kalibrieren (dabei nicht berühren!)
     for (uint8_t i = 0; i < NUM_SENSORS; i++)
@@ -131,7 +141,7 @@ void setup()
         sensors[i].configure(touchPins[i]);
     }
 
-    recalibrateSensors();
+    recalibrateSensors(false);
 
     midi.begin();
 
@@ -146,6 +156,15 @@ void setup()
     encoder.begin();
 
     menu.begin(&speaker, &displayCtrl);
+
+    // Splash mindestens SPLASH_MS stehen lassen, dann die normale
+    // Oberfläche aufbauen
+    while (millis() - splashStart < SPLASH_MS)
+    {
+        delay(10);
+    }
+
+    displayCtrl.showHome();
 
     displayCtrl.showBattery(readBatteryMilliVolts());
 }
