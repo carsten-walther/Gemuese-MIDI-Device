@@ -60,9 +60,9 @@ Klaviatur, den Verbindungsstatus und den Batteriestand.
   erscheint im Audio-MIDI-Setup (macOS) bzw. in [rtpMIDI](https://www.tobias-erichsen.de/software/rtpmidi.html) (Windows)
 - **USB-Host-MIDI** (optional): ein externes MIDI-Gerät kann an den
   ESP32 angeschlossen werden
-- **Splash-Screen** beim Start mit Gerätename und Firmware-Version;
-  Touch-Kalibrierung und Funk-Initialisierung laufen währenddessen im
-  Hintergrund
+- **Splash-Screen** beim Start (mindestens 2 s) mit Gerätename und
+  Firmware-Version; Touch-Kalibrierung und Funk-Initialisierung laufen
+  währenddessen im Hintergrund
 - **Display-UI**: Pads mit Notennamen — beim Anschlag füllen sie sich
   von unten proportional zur Velocity (grün/gelb/rot, VU-Stil), nach
   dem Loslassen hält ein Peak-Marker die letzte Höhe kurz und fällt
@@ -89,6 +89,11 @@ Klaviatur, den Verbindungsstatus und den Batteriestand.
 
 ### Pinbelegung
 
+Die MIDI-Noten in der Tabelle gelten für die Werkseinstellung (Skala
+Dur, Oktave 0); Skala und Oktav-Shift verschieben sie zur Laufzeit. Im
+Drumkit-Modus sendet jedes Pad stattdessen seine GM-Percussion-Note auf
+Kanal 10 (siehe [`include/Drums.h`](include/Drums.h)).
+
 | GPIO | Funktion | MIDI-Note |
 |------|----------|-----------|
 | 1    | Touch-Sensor 1 | C4 (60) |
@@ -102,8 +107,8 @@ Klaviatur, den Verbindungsstatus und den Batteriestand.
 | 21   | I2S BCLK → MAX98357A | — |
 | 17   | I2S LRC → MAX98357A | — |
 | 16   | I2S DIN → MAX98357A | — |
-| 18   | Encoder A | — |
-| 44   | Encoder B | — |
+| 44   | Encoder A | — |
+| 18   | Encoder B | — |
 | 43   | Encoder SW (Taster) | — |
 | 14   | Board-Button: Rekalibrierung | — |
 
@@ -137,9 +142,9 @@ pio run -t upload
 pio device monitor
 ```
 
-**Wichtig beim Start:** Während des Splash-Screens (~4 Sekunden, mit
-Name und Firmware-Version) werden die Sensoren im Hintergrund
-kalibriert. Das Gemüse muss dabei schon angeschlossen sein, darf aber
+**Wichtig beim Start:** Während des Splash-Screens (mindestens 2
+Sekunden, `SPLASH_MS`, mit Name und Firmware-Version) werden die
+Sensoren im Hintergrund kalibriert. Das Gemüse muss dabei schon angeschlossen sein, darf aber
 nicht berührt werden — der Splash weist darauf hin.
 
 Im Betrieb führt die Firmware die Ruhewerte automatisch langsam nach
@@ -176,7 +181,10 @@ Alle Einstellungen liegen in [`include/Config.h`](include/Config.h):
   [`include/Scales.h`](include/Scales.h); Pin-Zuordnung der Sensoren;
   Notennamen auf dem Display
   wahlweise deutsch (H4) oder englisch (B4) via `USE_GERMAN_NOTE_NAMES`
-- Touch-Empfindlichkeit (`TOUCH_ON_RATIO` / `TOUCH_OFF_RATIO`)
+- Touch-Empfindlichkeit (`TOUCH_ON_RATIO` / `TOUCH_OFF_RATIO`),
+  Kalibrier-Stichproben (`TOUCH_CALIBRATION_SAMPLES`) und der
+  Glitch-Filter `TOUCH_CONFIRM_SAMPLES` (so viele Messungen in Folge
+  müssen über der Schwelle liegen, bevor eine Note startet — 1 = aus)
 - Baseline-Nachführung (`TOUCH_BASELINE_INTERVAL_MS` = 0 schaltet sie ab,
   `TOUCH_BASELINE_FILTER` bestimmt die Trägheit)
 - Lautsprecher (`ENABLE_SPEAKER`, I2S-Pins, `SPEAKER_SAMPLE_RATE`,
@@ -190,7 +198,17 @@ Alle Einstellungen liegen in [`include/Config.h`](include/Config.h):
   die Defaults für Lautstärke/Wellenform gelten bis zur ersten
   Änderung im Menü, danach zählen die im NVS gespeicherten Werte
 - Display (`DISPLAY_ROTATION`, `DISPLAY_BRIGHNESS`, Einblenddauer
-  `DISPLAY_TOAST_MS`)
+  `DISPLAY_TOAST_MS`) und Batterie-Messintervall (`BATTERY_UPDATE_MS`)
+
+Instrumentspezifisches liegt in [`include/Drums.h`](include/Drums.h):
+
+- Drumkit: GM-Notennummern (`drumNotes`), Tastenkürzel (`drumLabels`)
+  und die Synthese-Rezepte (`drumSpecs`) — je Drum Startfrequenz,
+  Tonhöhen- und Amplituden-Abfall, Ton-/Rausch-Mischung, Rausch-Tiefpass
+  und Pegel-Ausgleich
+- FM-E-Piano: Modulationsverhältnis (`PIANO_MOD_RATIO`), Anschlagsglanz
+  (`PIANO_INDEX_START` / `_FLOOR` / `_DECAY`) sowie Ausklingen und
+  Release (`PIANO_DECAY`, `PIANO_RELEASE`)
 
 **Hinweis zu USB-Host-MIDI:** Der USB-C-Port wird dann exklusiv vom
 USB-Host belegt — der serielle Monitor funktioniert nicht mehr, und es
@@ -201,6 +219,8 @@ wird ein OTG-Adapter benötigt.
 ```
 include/Config.h            zentrale Konfiguration
 include/Credentials.h       WLAN-Zugangsdaten (lokal, gitignoriert)
+include/Scales.h            Skalen (Intervalltabellen, Pad → Note)
+include/Drums.h             Instrumente, Drumkit-Rezepte, FM-Piano-Parameter
 src/main.cpp                Verdrahtung: Touch → MIDI + Display
 src/TouchSensor.*           Touch-Logik (ESP32-S3, Baseline + Hysterese)
 src/MidiController.*        MIDI-Transports (BLE, RTP, USB-Host)

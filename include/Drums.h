@@ -28,8 +28,8 @@ enum Instrument : uint8_t
 // Anschlag) und fällt schnell auf einen Sockel — der Ton wird weich.
 // Der Index ist in Sinustabellen-Schritten angegeben (1024 = Periode).
 
-// Klingt das Piano zu metallisch/glockig, senke PIANO_INDEX_START 
-// (z. B. auf 300) oder PIANO_MOD_RATIO auf 3 (weicher, orgeliger); 
+// Klingt das Piano zu metallisch/glockig, senke PIANO_INDEX_START
+// (z. B. auf 300) oder PIANO_MOD_RATIO auf 3 (weicher, orgeliger);
 // klingt es zu brav, hoch auf 500/14.
 
 constexpr uint32_t PIANO_MOD_RATIO = 5; // Modulator = 7-faches der Tonhöhe
