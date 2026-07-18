@@ -23,6 +23,17 @@ public:
     bool isPressed();
 
     uint8_t velocity();
+
+    // Aktueller Anpressdruck 0..127 (geglättet). Nur bei gehaltener
+    // Taste sinnvoll — für Aftertouch/Channel Pressure.
+    uint8_t pressure();
+
+    // Druckänderung gegenüber dem eingeschwungenen Griff (negativ =
+    // lockerer). 0, solange der Bezugspunkt noch nicht steht — der
+    // wird erst AFTERTOUCH_SETTLE_MS nach dem Anschlag festgehalten,
+    // weil die Anschlagsspitze über dem gehaltenen Druck liegt.
+    int16_t pressureDelta();
+
     uint32_t value();
     uint32_t baseline();
 
@@ -45,7 +56,18 @@ private:
     uint32_t _peak         = 0;
     uint8_t _velocity      = DEFAULT_VELOCITY;
 
+    // Aftertouch: geglätteter Druck, läuft nur bei gehaltener Taste,
+    // plus der nach dem Einschwingen festgehaltene Bezugspunkt
+    float _pressureSmooth = 0.0f;
+    uint8_t _pressureRef  = 0;
+    bool _pressureRefSet  = false;
+    uint32_t _pressStart  = 0;
+
     void finishMeasurement();
+
+    // Messwert auf 0..127 abbilden (gleiche Kennlinie wie die Velocity,
+    // aber über die volle MIDI-Spanne)
+    float pressureFromValue(uint32_t value) const;
 
     bool _pressed       = false;
     bool _pressedEvent  = false;

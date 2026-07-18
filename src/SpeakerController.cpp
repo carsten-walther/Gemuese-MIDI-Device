@@ -44,6 +44,10 @@ struct Voice
     float burstDecay        = 1.0f;
     float burstAmp          = 0.0f;
 
+    // Aftertouch: Lautstärke-Faktor aus dem Anpressdruck (1.0 = wie
+    // angeschlagen). Nur für gehaltene Stimmen, One-Shots ignorieren ihn.
+    float pressure = 1.0f;
+
     // FM-E-Piano: Modulator-Phase und fallender Modulationsindex
     bool fm           = false;
     uint32_t modPhase = 0;
@@ -341,7 +345,7 @@ void audioTask(void*)
 
                     uint32_t index = ((v.phase >> 22) + offset) & 1023u;
 
-                    mix += sineLut[index] * v.amp * arpGain[gainIndex];
+                    mix += sineLut[index] * v.amp * arpGain[gainIndex] * v.pressure;
 
                     continue;
                 }
@@ -368,7 +372,7 @@ void audioTask(void*)
 
                 v.phase += v.step;
 
-                mix += oscSample(v.phase, activeWaveform) * v.amp * arpGain[gainIndex];
+                mix += oscSample(v.phase, activeWaveform) * v.amp * arpGain[gainIndex] * v.pressure;
             }
 
             // Auf ±1.0 normieren; Drums bekommen dabei deutlich mehr
@@ -472,6 +476,9 @@ static void startMelodyVoice(Voice& v, uint8_t note, uint8_t velocity)
     v.phase  = 0;
     v.gate   = true;
     v.target = velocity / 127.0f;
+
+    // Aftertouch startet neutral — der Druck moduliert erst ab hier
+    v.pressure = 1.0f;
 
     v.fm = activeInstrument == INST_PIANO;
 
@@ -625,6 +632,22 @@ void SpeakerController::allNotesOff()
     {
         v.gate   = false;
         v.target = 0.0f;
+    }
+}
+
+void SpeakerController::setPressure(uint8_t note, float factor)
+{
+    for (auto& v : voices)
+    {
+        // Nur gehaltene Melodie-Stimmen: One-Shots (Drums) haben kein
+        // Gate und klingen ihre feste Hüllkurve aus
+        if (v.gate && !v.oneShot && v.note == note)
+        // cppcheck-suppress useStlAlgorithm
+        {
+            v.pressure = factor;
+
+            return;
+        }
     }
 }
 

@@ -30,6 +30,11 @@ public:
     // MIDI-Betrieb, damit nichts endlos weiterdudelt
     void allNotesOff();
 
+    // Aftertouch: Lautstärke-Faktor einer klingenden Note (1.0 = wie
+    // angeschlagen). Wirkt nur auf gehaltene Stimmen, nicht auf die
+    // One-Shots des Drumkits.
+    void setPressure(uint8_t note, float factor);
+
     // Gesamtlautstärke zur Laufzeit (0.0–1.0), z. B. vom Encoder;
     // Startwert ist SPEAKER_MASTER_VOLUME aus der Config
     void setVolume(float volume);

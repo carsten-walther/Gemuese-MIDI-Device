@@ -24,6 +24,13 @@ Klaviatur, den Verbindungsstatus und den Batteriestand.
   abgeleitet (Kontaktfläche) — ein satter Griff klingt lauter als eine
   Fingerspitze; per Peak-Fenster (~10 ms) wird der Spitzenwert des
   Anschlags erfasst
+- **Aftertouch**: der Druck wird auch *während* einer gehaltenen Note
+  weiter ausgewertet — fester zugreifen lässt den Ton anschwellen,
+  lockern nimmt ihn zurück. Per MIDI als Channel Pressure, am
+  Lautsprecher als Lautstärke-Modulation der einzelnen Stimme. Der
+  Bezugspunkt ist der eingeschwungene Griff, nicht die Anschlagsspitze,
+  damit die Anschlagsdynamik erhalten bleibt und der Druck nur die
+  Änderung ausdrückt
 - **BLE-MIDI**: erscheint als Bluetooth-MIDI-Gerät (macOS, iOS, Windows 10+)
 - **FM-E-Piano**: 2-Operator-FM im DX7/Rhodes-Stil — heller,
   glockiger Anschlag (fallender Modulationsindex), der bei gehaltener
@@ -183,6 +190,11 @@ Alle Einstellungen liegen in [`include/Config.h`](include/Config.h):
   `ENABLE_VELOCITY_PEAK_HOLD` mit Haltezeit `VELOCITY_PEAK_HOLD_MS`
   und Fallgeschwindigkeit `VELOCITY_PEAK_FALL_*`) — der serielle Monitor zeigt die
   gesendete Velocity pro NoteOn zum Einstellen der Kennlinie
+- Aftertouch (`ENABLE_AFTERTOUCH`, Glättung `AFTERTOUCH_FILTER`,
+  Einschwingzeit bis zum Bezugspunkt `AFTERTOUCH_SETTLE_MS`, Sendetakt
+  `AFTERTOUCH_INTERVAL_MS` und Mindeständerung `AFTERTOUCH_DEADBAND`
+  gegen MIDI-Fluten, Modulationsbereich am Lautsprecher
+  `AFTERTOUCH_SPEAKER_MIN` / `_MAX`)
 - Grundton der Skalen (`SCALE_ROOT_NOTE`), Intervalltabellen in
   [`include/Scales.h`](include/Scales.h); Pin-Zuordnung der Sensoren;
   Notennamen auf dem Display

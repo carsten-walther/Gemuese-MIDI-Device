@@ -30,16 +30,22 @@ wo das Gerät herkommt.
   (Klick = Parameter, Drehen = Wert) für Sound, Wellenform, Arpeggio,
   Skala, Oktave und Lautstärke; Ablage im NVS-Flash (Preferences) mit
   verzögertem, gebündeltem Speichern.
+- **Aftertouch** — der Anpressdruck wird bei gehaltener Note laufend
+  ausgewertet: Channel Pressure per MIDI, Lautstärke-Modulation am
+  Lautsprecher. Bezug ist der eingeschwungene Griff
+  (`AFTERTOUCH_SETTLE_MS`), nicht die Anschlagsspitze — sonst fiele
+  jede Note direkt nach dem Anschlag ab. Sendetakt und Deadband halten
+  den MIDI-Bus frei.
 - **Splash-Screen** — Name + Firmware-Version beim Start, Kalibrierung
   und Funk-Initialisierung laufen währenddessen im Hintergrund.
 
 ## Klang & Musikalität (der größte Spielraum)
 
-**Vibrato/Aftertouch** — die Touch-Werte liefern kontinuierlich Daten,
-auch *während* eine Note gehalten wird. Druckänderungen könnten Channel
-Pressure (MIDI) bzw. Tonhöhen- oder Lautstärkemodulation (Speaker)
-steuern. Das wäre das ausdrucksstärkste Feature überhaupt: die Gurke
-fester drücken → der Ton schwillt an.
+**Vibrato** — der Druck moduliert jetzt die Lautstärke (siehe
+Aftertouch oben). Die Tonhöhe wäre die zweite Richtung: ein LFO, dessen
+Tiefe am Druck hängt, oder Pitch-Bend direkt aus dem Druckwert. Beim
+Speaker ein Multiplikator auf den Phasenschritt, bei MIDI ein echtes
+Pitch-Bend-Event.
 
 **Hall/Delay am Speaker** — eine simple Delay-Line würde besonders den
 Chip-Wellenformen die Piepser-Anmutung nehmen. Kostet nur RAM für den

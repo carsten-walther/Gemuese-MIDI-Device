@@ -188,6 +188,22 @@ void MidiController::noteOff(uint8_t note, uint8_t channel)
     midiOut.sendNoteOff(channel, note, 0);
 }
 
+void MidiController::channelPressure(uint8_t value, uint8_t channel)
+{
+    if (channel == 0 || channel > 16)
+    {
+        return;
+    }
+
+    // Channel Pressure (0xD0) hat nur ein Datenbyte. Der MIDIHandler
+    // bietet dafür keine eigene Methode — sendRaw() geht an dieselben
+    // Transports und nach derselben Regel wie sendNoteOn().
+    uint8_t data[2] = {static_cast<uint8_t>(0xD0 | ((channel - 1) & 0x0F)),
+                       static_cast<uint8_t>(value & 0x7F)};
+
+    midiOut.sendRaw(data, sizeof(data));
+}
+
 bool MidiController::bleConnected()
 {
     return ENABLE_BLE_MIDI && bleMIDI.isConnected();

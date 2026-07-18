@@ -66,6 +66,12 @@ static bool midiConnected()
 uint32_t lastStatusUpdate  = 0;
 uint32_t lastBatteryUpdate = 0;
 
+// Aftertouch: Sendetakt und zuletzt gesendeter Wert. Den Bezugspunkt
+// für die Modulation hält jeder TouchSensor selbst (pressureDelta).
+uint32_t lastAftertouch  = 0;
+uint8_t lastSentPressure = 0;
+bool aftertouchSent      = false;
+
 // Batteriespannung in mV (2:1-Spannungsteiler auf dem Board)
 static uint32_t readBatteryMilliVolts()
 {
@@ -113,6 +119,98 @@ static void recalibrateSensors(bool showUi = true)
     {
         displayCtrl.showPads();
     }
+}
+
+// ------------------------------------------------
+// Aftertouch
+// ------------------------------------------------
+
+// Druckänderungen bei gehaltenen Noten auswerten: am Lautsprecher als
+// Lautstärke-Modulation der einzelnen Stimme, per MIDI als Channel
+// Pressure. Im Drumkit wirkungslos — One-Shots haben nichts, das sich
+// während des Haltens noch modulieren ließe.
+static void updateAftertouch()
+{
+    if (Settings::instrument() == INST_DRUMS)
+    {
+        return;
+    }
+
+    uint8_t midiMax = 0;
+    bool anyMidi    = false;
+
+    for (uint8_t i = 0; i < NUM_SENSORS; i++)
+    {
+        if (!sensors[i].isPressed())
+        {
+            continue;
+        }
+
+        uint8_t p = sensors[i].pressure();
+
+        if (noteViaMidi[i])
+        {
+            // Channel Pressure gilt für den ganzen Kanal, nicht pro
+            // Note — der stärkste gehaltene Finger bestimmt den Wert
+            if (!anyMidi || p > midiMax)
+            {
+                midiMax = p;
+            }
+
+            anyMidi = true;
+
+            continue;
+        }
+
+        // Lautsprecher: Faktor relativ zum eingeschwungenen Griff,
+        // damit die Anschlagsdynamik erhalten bleibt und der Druck nur
+        // die Änderung ausdrückt (ohne Nachdrücken also genau 1.0)
+        int32_t delta = sensors[i].pressureDelta();
+
+        float factor = delta >= 0 ? 1.0f + (delta / 127.0f) * (AFTERTOUCH_SPEAKER_MAX - 1.0f)
+                                  : 1.0f + (delta / 127.0f) * (1.0f - AFTERTOUCH_SPEAKER_MIN);
+
+        if (factor < AFTERTOUCH_SPEAKER_MIN)
+        {
+            factor = AFTERTOUCH_SPEAKER_MIN;
+        }
+
+        if (factor > AFTERTOUCH_SPEAKER_MAX)
+        {
+            factor = AFTERTOUCH_SPEAKER_MAX;
+        }
+
+        speaker.setPressure(playedNote[i], factor);
+    }
+
+    if (!anyMidi)
+    {
+        // Letzte per MIDI gehaltene Note ist weg: Druck einmal auf 0
+        // zurücknehmen, sonst bleibt der Klangerzeuger am anderen Ende
+        // auf dem zuletzt gesendeten Wert stehen
+        if (aftertouchSent)
+        {
+            midi.channelPressure(0);
+
+            aftertouchSent   = false;
+            lastSentPressure = 0;
+        }
+
+        return;
+    }
+
+    // Nur bei nennenswerter Änderung senden — sonst flutet der
+    // Druckwert den MIDI-Bus (siehe AFTERTOUCH_DEADBAND)
+    if (aftertouchSent &&
+        abs(static_cast<int>(midiMax) - static_cast<int>(lastSentPressure)) < AFTERTOUCH_DEADBAND)
+    {
+        return;
+    }
+
+    midi.channelPressure(midiMax);
+
+    lastSentPressure = midiMax;
+    aftertouchSent   = true;
 }
 
 // ------------------------------------------------
@@ -244,6 +342,15 @@ void loop()
     }
 
     midi.update();
+
+    // Aftertouch: Druck gehaltener Noten in Modulation übersetzen —
+    // getaktet, nicht bei jedem Durchlauf (siehe Config.h)
+    if (ENABLE_AFTERTOUCH && millis() - lastAftertouch >= AFTERTOUCH_INTERVAL_MS)
+    {
+        lastAftertouch = millis();
+
+        updateAftertouch();
+    }
 
     // Verbindet sich ein MIDI-Ziel, während der Lautsprecher spielt:
     // Stimmen ausklingen lassen, sonst dudeln sie endlos weiter

@@ -83,6 +83,52 @@ constexpr int32_t VELOCITY_PEAK_FALL_PX           = 2;
 // 0 = kein Fenster (NoteOn sofort, Velocity aus der ersten Messung).
 constexpr uint32_t TOUCH_VELOCITY_WINDOW_MS = 10;
 
+// ------------------------------------------------
+// Aftertouch (Druckdynamik)
+// ------------------------------------------------
+//
+// Der kapazitive Messwert ändert sich auch WÄHREND eine Note gehalten
+// wird — fester greifen heißt mehr Kontaktfläche heißt höherer Wert.
+// Daraus wird Channel Pressure (MIDI) bzw. am Lautsprecher eine
+// Lautstärke-Modulation: fester drücken lässt den Ton anschwellen.
+constexpr bool ENABLE_AFTERTOUCH = true;
+
+// Glättung des Druckwerts (IIR-Tiefpass, größer = träger). Der
+// Rohwert zittert deutlich; ungefiltert zittert der Ton mit.
+constexpr uint8_t AFTERTOUCH_FILTER = 8;
+
+// Sendetakt und Mindeständerung. Ohne beides ginge pro gehaltener
+// Note bei jedem Loop-Durchlauf eine Nachricht raus (~200/s) — das
+// verstopft besonders BLE-MIDI.
+constexpr uint32_t AFTERTOUCH_INTERVAL_MS = 25;
+constexpr uint8_t AFTERTOUCH_DEADBAND     = 3;
+
+// Einschwingzeit bis zum Bezugspunkt: Der Messwert fällt nach dem
+// Anschlag noch deutlich ab (die Anschlagsspitze liegt über dem
+// gehaltenen Griff). Erst nach dieser Zeit wird der Ruhedruck als
+// Bezug festgehalten — sonst startete jede Note im Minus und würde
+// gleich nach dem Anschlag leiser. Bis dahin moduliert nichts.
+//
+// Der Wert muss deutlich über der Zeitkonstante der Glättung liegen
+// (AFTERTOUCH_FILTER * Loop-Intervall, also ~40 ms): bei 60 ms wäre
+// der Bezug erst zu 78 % eingeschwungen und der Ton bliebe dauerhaft
+// ~5 % zu leise. Bei 200 ms trifft er den Ruhedruck. Kürzere Noten
+// bekommen dadurch gar keinen Aftertouch — was sie ohnehin nicht
+// sinnvoll nutzen könnten.
+constexpr uint32_t AFTERTOUCH_SETTLE_MS = 200;
+
+// Modulationsbereich am Lautsprecher. Der Faktor wirkt auf die
+// Lautstärke der Stimme und ist relativ zum Druck beim Anschlag:
+// beim Anschlag immer 1.0, danach hoch bis MAX oder runter bis MIN.
+// So bleibt die Anschlagsdynamik erhalten und der Druck moduliert nur.
+constexpr float AFTERTOUCH_SPEAKER_MIN = 0.35f;
+constexpr float AFTERTOUCH_SPEAKER_MAX = 1.80f;
+
+// Hinweis: Die Kennlinie ist dieselbe wie bei der Velocity und
+// sättigt bei TOUCH_VELOCITY_RATIO_MAX. Wer schon beim Anschlag voll
+// zugreift, hat nach oben keinen Spielraum mehr — der serielle
+// Monitor zeigt die Druckwerte zum Einstellen.
+
 // Anzahl der Sensoren
 constexpr uint8_t NUM_SENSORS = 7;
 
