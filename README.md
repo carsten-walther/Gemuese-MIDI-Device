@@ -32,9 +32,12 @@ Klaviatur, den Verbindungsstatus und den Batteriestand.
 - **Drumkit-Modus**: die sieben Pads werden zu Kick, Snare, HiHats
   (zu/offen), zwei Toms und Clap — per MIDI als General-MIDI-
   Percussion auf Kanal 10 (jede DAW spielt sofort ein echtes
-  Schlagzeug), am Lautsprecher als 808-Stil-Synthese (Sinus mit
-  Tonhöhen-Hüllkurve + LFSR-Rauschen, One-Shots mit Schlagstärke
-  aus der Anschlagsdynamik); Kit-Rezepte in
+  Schlagzeug), am Lautsprecher als 808-Stil-Synthese: Sinus mit
+  Tonhöhen-Hüllkurve auf einen Sockel (die Kick fällt von 170 auf
+  50 Hz und *bleibt* dort, statt in den Subbass wegzulaufen) plus
+  LFSR-Rauschen, tiefpassgefiltert für Snare und Toms,
+  hochpassgefiltert für HiHats und Clap; One-Shots mit Schlagstärke
+  aus der Anschlagsdynamik. Kit-Rezepte in
   [`include/Drums.h`](include/Drums.h)
 - **Standalone-Betrieb mit Lautsprecher**: ohne verbundenes
   MIDI-Ziel spielt ein I2S-Verstärker (MAX98357A) die Noten direkt —
@@ -203,9 +206,11 @@ Alle Einstellungen liegen in [`include/Config.h`](include/Config.h):
 Instrumentspezifisches liegt in [`include/Drums.h`](include/Drums.h):
 
 - Drumkit: GM-Notennummern (`drumNotes`), Tastenkürzel (`drumLabels`)
-  und die Synthese-Rezepte (`drumSpecs`) — je Drum Startfrequenz,
-  Tonhöhen- und Amplituden-Abfall, Ton-/Rausch-Mischung, Rausch-Tiefpass
-  und Pegel-Ausgleich
+  und die Synthese-Rezepte (`drumSpecs`) — je Drum Startfrequenz und
+  Sockel des Tonhöhen-Sweeps (`freq` / `pitchFloor`), Tonhöhen- und
+  Amplituden-Abfall, Ton-/Rausch-Mischung, Rauschfilter
+  (`noiseLpf` als Koeffizient, `noiseHp` schaltet auf Hochpass) und
+  Pegel-Ausgleich
 - FM-E-Piano: Modulationsverhältnis (`PIANO_MOD_RATIO`), Anschlagsglanz
   (`PIANO_INDEX_START` / `_FLOOR` / `_DECAY`) sowie Ausklingen und
   Release (`PIANO_DECAY`, `PIANO_RELEASE`)

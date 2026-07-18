@@ -24,14 +24,16 @@ struct Voice
 
     // One-Shot-Betrieb (Drums): feste Ausklinghüllkurve, NoteOff wird
     // ignoriert, optional fallende Tonhöhe und Rausch-Anteil
-    bool oneShot     = false;
-    float pitchDecay = 1.0f; // Tonhöhen-Abfall pro Sample
-    float ampDecay   = 1.0f; // Amplituden-Abfall pro Sample
-    float toneMix    = 1.0f;
-    float noiseMix   = 0.0f;
-    float noiseLpf   = 1.0f; // Tiefpass-Koeffizient fürs Rauschen
-    float gain       = 1.0f; // Lautstärke-Ausgleich der Drum
-    float noiseState = 0.0f; // Filterzustand (ein Pol)
+    bool oneShot       = false;
+    float pitchDecay   = 1.0f; // Tonhöhen-Abfall pro Sample
+    uint32_t stepFloor = 0;    // Untergrenze des Sweeps (Phasenschritt)
+    float ampDecay     = 1.0f; // Amplituden-Abfall pro Sample
+    float toneMix      = 1.0f;
+    float noiseMix     = 0.0f;
+    float noiseLpf     = 1.0f;  // Filterkoeffizient fürs Rauschen
+    bool noiseHp       = false; // Hochpass statt Tiefpass
+    float gain         = 1.0f;  // Lautstärke-Ausgleich der Drum
+    float noiseState   = 0.0f;  // Filterzustand (ein Pol)
 
     // FM-E-Piano: Modulator-Phase und fallender Modulationsindex
     bool fm           = false;
@@ -89,13 +91,24 @@ int16_t sineLut[1024];
 // 128 Frames ~5,8 ms Latenz pro Block
 constexpr int FRAMES = 128;
 
+// Phasenschritt für eine Frequenz (32 Bit = eine Periode)
+uint32_t stepForFreq(float freq)
+{
+    return static_cast<uint32_t>(freq / SPEAKER_SAMPLE_RATE * 4294967296.0f);
+}
+
 // Phasenschritt für eine MIDI-Note: f = 440 * 2^((note-69)/12)
 uint32_t stepForNote(uint8_t note)
 {
-    float freq = 440.0f * powf(2.0f, (static_cast<int>(note) - 69) / 12.0f);
-
-    return static_cast<uint32_t>(freq / SPEAKER_SAMPLE_RATE * 4294967296.0f);
+    return stepForFreq(440.0f * powf(2.0f, (static_cast<int>(note) - 69) / 12.0f));
 }
+
+// Kopffreiheit vor der Sättigung: sieben Melodie-Stimmen können sich
+// stapeln, Drums praktisch nie — sie dürfen deshalb viel lauter raus.
+// Der Faktor 1.5 gleicht die Kleinsignal-Verstärkung des Soft-Clippers
+// aus, damit der Melodie-Pegel derselbe bleibt wie vorher.
+constexpr float DRUM_HEADROOM   = 2.5f;
+constexpr float MELODY_HEADROOM = NUM_SENSORS * 1.5f;
 
 // Dreieckwelle aus dem Phasen-Akkumulator (weicher als Rechteck)
 int16_t triangle(uint32_t phase)
@@ -229,7 +242,19 @@ void audioTask(void*)
                         continue;
                     }
 
-                    v.step = static_cast<uint32_t>(v.step * v.pitchDecay);
+                    // Sweep nur bis zum Sockel — ohne ihn liefe die
+                    // Tonhöhe exponentiell gegen 0 Hz, und die Drum
+                    // verlöre lange vor dem Ende ihrer Hüllkurve
+                    // jeden hörbaren Körper
+                    if (v.step > v.stepFloor)
+                    {
+                        v.step = static_cast<uint32_t>(v.step * v.pitchDecay);
+
+                        if (v.step < v.stepFloor)
+                        {
+                            v.step = v.stepFloor;
+                        }
+                    }
 
                     v.phase += v.step;
 
@@ -242,11 +267,16 @@ void audioTask(void*)
 
                     if (v.noiseMix > 0.0f)
                     {
-                        // Ein-Pol-Tiefpass: nimmt dem LFSR-Rauschen die
-                        // blecherne Härte (Snare/Toms dunkel, HiHats hell)
-                        v.noiseState += (noiseSample() - v.noiseState) * v.noiseLpf;
+                        int16_t n = noiseSample();
 
-                        s += v.noiseState * v.noiseMix;
+                        // Ein-Pol-Filter auf dem LFSR-Rauschen: als
+                        // Tiefpass nimmt er Snare und Toms die blecherne
+                        // Härte, als Hochpass (Differenz zum Tiefpass)
+                        // gibt er HiHats und Clap ihr Zischen statt
+                        // eines breitbandigen Rauschteppichs
+                        v.noiseState += (n - v.noiseState) * v.noiseLpf;
+
+                        s += (v.noiseHp ? (n - v.noiseState) : v.noiseState) * v.noiseMix;
                     }
 
                     mix += s * v.amp * v.gain;
@@ -312,20 +342,29 @@ void audioTask(void*)
                 mix += oscSample(v.phase, activeWaveform) * v.amp * arpGain[gainIndex];
             }
 
-            // Kopffreiheit: durch die Stimmenzahl teilen, dann Master
-            mix *= masterVolume / NUM_SENSORS;
+            // Auf ±1.0 normieren; Drums bekommen dabei deutlich mehr
+            // Pegel als die stapelbaren Melodie-Stimmen
+            float x =
+                mix * masterVolume /
+                ((activeInstrument == INST_DRUMS ? DRUM_HEADROOM : MELODY_HEADROOM) * 32768.0f);
 
-            int32_t s = static_cast<int32_t>(mix);
-
-            if (s > 32767)
+            // Weiche Sättigung: Spitzen werden gerundet statt hart
+            // abgeschnitten. Bei Drums macht das zugleich den Druck,
+            // den die Ausgangsstufe eines Drumcomputers erzeugt.
+            if (x > 1.0f)
             {
-                s = 32767;
+                x = 1.0f;
+            }
+            else if (x < -1.0f)
+            {
+                x = -1.0f;
+            }
+            else
+            {
+                x = 1.5f * x - 0.5f * x * x * x;
             }
 
-            if (s < -32768)
-            {
-                s = -32768;
-            }
+            int32_t s = static_cast<int32_t>(x * 32767.0f);
 
             // Chiptune: Ausgang auf 256 Stufen rastern (8 Bit) —
             // Hüllkurven und Ausklingen bekommen so das typische
@@ -434,19 +473,19 @@ void SpeakerController::noteOn(uint8_t note, uint8_t velocity)
 
             const DrumSpec& spec = drumSpecs[d];
 
-            v.note    = note;
-            v.gate    = false; // One-Shot: kein Gate, Arp bleibt inaktiv
-            v.oneShot = true;
-            v.fm      = false;
-            v.phase   = 0;
-            v.step    = spec.freq > 0.0f
-                            ? static_cast<uint32_t>(spec.freq / SPEAKER_SAMPLE_RATE * 4294967296.0f)
-                            : 0;
+            v.note       = note;
+            v.gate       = false; // One-Shot: kein Gate, Arp bleibt inaktiv
+            v.oneShot    = true;
+            v.fm         = false;
+            v.phase      = 0;
+            v.step       = spec.freq > 0.0f ? stepForFreq(spec.freq) : 0;
+            v.stepFloor  = spec.pitchFloor > 0.0f ? stepForFreq(spec.pitchFloor) : 0;
             v.pitchDecay = spec.pitchDecay;
             v.ampDecay   = spec.ampDecay;
             v.toneMix    = spec.toneMix;
             v.noiseMix   = spec.noiseMix;
             v.noiseLpf   = spec.noiseLpf;
+            v.noiseHp    = spec.noiseHp;
             v.gain       = spec.gain;
             v.noiseState = 0.0f;
 
