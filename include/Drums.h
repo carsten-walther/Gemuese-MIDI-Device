@@ -41,6 +41,13 @@ constexpr float PIANO_INDEX_FLOOR = 45.0f;
 // auf den Sockel)
 constexpr float PIANO_INDEX_DECAY_MS = 75.0f;
 
+// Anschlagstärke öffnet den Modulationsindex: leise Anschläge klingen
+// weicher/dumpfer, harte heller/glockiger — beim echten Klavier wird
+// ein fester Hammerschlag nicht nur lauter, sondern auch obertonreicher.
+// Der Wert ist der Anteil von PIANO_INDEX_START bei Velocity 0
+// (1.0 = kein Einfluss, wie bisher).
+constexpr float PIANO_VEL_INDEX_MIN = 0.35f;
+
 // Amplituden-Hüllkurve: langes Ausklingen bei gehaltener Taste,
 // schnelleres Release nach dem Loslassen (jeweils bis -60 dB). Die
 // Pro-Sample-Faktoren rechnet der SpeakerController zur Laufzeit aus

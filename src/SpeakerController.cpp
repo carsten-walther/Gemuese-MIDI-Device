@@ -126,6 +126,14 @@ uint32_t stepForNote(uint8_t note)
     return stepForFreq(440.0f * powf(2.0f, (static_cast<int>(note) - 69) / 12.0f));
 }
 
+// Start-Modulationsindex für einen Anschlag: härtere Velocity macht
+// den Anschlags-Glanz heller, nicht nur lauter (siehe PIANO_VEL_INDEX_MIN)
+float pianoStartIndex(uint8_t velocity)
+{
+    return PIANO_INDEX_START *
+           (PIANO_VEL_INDEX_MIN + (1.0f - PIANO_VEL_INDEX_MIN) * velocity / 127.0f);
+}
+
 // Abklingfaktor pro Sample: erreicht -60 dB (Faktor 0.001) nach ms —
 // so bleiben die Hüllkurvenzeiten unabhängig von der Abtastrate
 float decayPerSample(float ms)
@@ -596,7 +604,7 @@ static void startMelodyVoice(Voice& v, uint8_t note, uint8_t velocity)
         // bei Phase 0, daher kein Klick), Anschlags-Glanz aufziehen
         v.amp      = v.target;
         v.modPhase = 0;
-        v.fmIndex  = PIANO_INDEX_START;
+        v.fmIndex  = pianoStartIndex(velocity);
     }
 }
 
@@ -666,7 +674,7 @@ void SpeakerController::noteOn(uint8_t note, uint8_t velocity)
             if (v.fm)
             {
                 v.amp     = v.target;
-                v.fmIndex = PIANO_INDEX_START;
+                v.fmIndex = pianoStartIndex(velocity);
             }
 
             return;

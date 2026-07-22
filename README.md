@@ -34,8 +34,10 @@ Klaviatur, den Verbindungsstatus und den Batteriestand.
 - **BLE-MIDI**: erscheint als Bluetooth-MIDI-Gerät (macOS, iOS, Windows 10+)
 - **FM-E-Piano**: 2-Operator-FM im DX7/Rhodes-Stil — heller,
   glockiger Anschlag (fallender Modulationsindex), der bei gehaltener
-  Taste über ~2 s weich ausklingt; Skala, Oktave und Arpeggio wirken
-  wie beim Chip-Sound
+  Taste über ~2 s weich ausklingt; die Anschlagstärke steuert dabei
+  auch die Helligkeit, nicht nur die Lautstärke — ein satter Hammer-
+  schlag klingt obertonreicher als ein leichter Anschlag; Skala,
+  Oktave und Arpeggio wirken wie beim Chip-Sound
 - **Drumkit-Modus**: die sieben Pads werden zu Kick, Snare, HiHats
   (zu/offen), zwei Toms und Clap — per MIDI als General-MIDI-
   Percussion auf Kanal 10 (jede DAW spielt sofort ein echtes
@@ -234,8 +236,9 @@ Instrumentspezifisches liegt in [`include/Drums.h`](include/Drums.h):
   Drum) und `DRUM_VEL_TONE_MIN` (wie stark die Anschlagstärke die
   Helligkeit öffnet)
 - FM-E-Piano: Modulationsverhältnis (`PIANO_MOD_RATIO`), Anschlagsglanz
-  (`PIANO_INDEX_START` / `_FLOOR` / `_DECAY_MS`) sowie Ausklingen und
-  Release in Millisekunden (`PIANO_DECAY_MS`, `PIANO_RELEASE_MS`)
+  (`PIANO_INDEX_START` / `_FLOOR` / `_DECAY_MS`), wie stark die
+  Anschlagstärke ihn öffnet (`PIANO_VEL_INDEX_MIN`) sowie Ausklingen
+  und Release in Millisekunden (`PIANO_DECAY_MS`, `PIANO_RELEASE_MS`)
 
 **Hinweis zu USB-Host-MIDI:** Der USB-C-Port wird dann exklusiv vom
 USB-Host belegt — der serielle Monitor funktioniert nicht mehr, und es
